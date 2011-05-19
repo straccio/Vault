@@ -119,7 +119,8 @@ foreach ($dirlist as $d){
 		$xml_doc->strictErrorChecking=false;
 		$xml_doc->loadHTMLFile($d.".ok");
 		//echo "html loaded;";
-		if ($html = $xp->transformToXml($xml_doc)) {
+		$html = $xp->transformToXml($xml_doc);
+		if ($html) {
 			//echo "html transformed;";
 			$aa=json_decode($html);
 			//var_dump($aa);
@@ -202,6 +203,9 @@ function updateCard($jCard,$cname){
 }
 
 function parseScript($text){
+    return parseAbilitys(parseFC(parseTargets($text)));
+    /*
+    
     $ret= parseFunctions(
 	parseEvents(
 		parseDuration(
@@ -210,6 +214,89 @@ function parseScript($text){
 	) 
     );
     return $ret;
+     *
+     */
+}
+
+function parseFC(&$text){
+    $ret=&$text;
+    //F/C
+    $ret = preg_replace('/([+-]?[0-9XYZ]*\/[+-]?[0-9XYZ])/', '@($1)', $ret);
+    
+    return $ret;
+}
+
+function parseAbilitys(&$text){
+    global
+	$ab_ar;
+    
+    $ret=&$text;
+    
+    foreach($ab_ar as &$ab){
+	$ret = str_ireplace($ab, 'a('.
+	    ucfirst(
+		str_replace(')','',str_replace(' ','',str_replace('a(','', $ab)))).')'
+	    , $ret);
+    }
+    
+    return $ret;
+}
+
+function parseTargets(&$text){
+    global
+	$ab_ar,
+	    $col_ar,
+	    $land_ar,
+	    $spells_ar,
+	    $targ_ar,
+	    $typa_ar,
+	    $act_ar,
+	    $cond_ar;
+    
+    unset($targ_ar['s']);
+    unset($targ_ar[""]);
+    
+    $targets=implode($targ_ar, '|');
+    $ability=  implode($ab_ar, '|');
+    $colors=implode($col_ar, '|');
+    $lands=implode($land_ar, '|');
+    $spells=implode($spells_ar, '|');
+    $type=implode($type_ar, '|');
+    $actions=implode($act_ar, '|');
+    $condition=implode($cond_ar, '|');
+    
+    $ret=&$text;
+    
+    /*  DA FARE function getTarget({});  
+    
+     */
+    $ret = preg_replace('/[Tt]arget (@\([^\)]*\))/', 'target({\'v\':\'$1$2\'});', $ret);
+    
+    return $ret;
+    
+/*
+    $ret = preg_replace('/[Tt]arget (non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', 't($1$2$3$4)', $ret);
+    
+    $ret = preg_replace('/(to) (that|an|a)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', '$1$2 t($3$4)', $ret);
+    
+    $ret = preg_replace('/(all) (non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', '$1$2 t($3$4)', $ret);
+    
+    $ret = preg_replace('/t\(([^\)]*)\),\s?(and)?\/?(or)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', 't($1 $2 $4$5$6)', $ret);
+        
+    $ret = preg_replace('/(non-?)?('.$targets.'|'.$actions.'|'.$type .')?\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.') (has|gets?)/i', 't($1$2$3$4) $5', $ret);
+        
+    while (preg_match('/t\(([^\)]*)\),?\s?(and)?\/?(or)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', $ret)){    
+
+	
+	$ret = preg_replace('/t\(([^\)]*)\),?\s?(and)?\/?(or)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', 't($1 $2 $4$5$6)', $ret);
+	
+    }
+    
+    $ret = preg_replace('/\],\s$/', ']', $ret);
+    
+    $ret= preg_replace('/('.$targets.') you control/i','t($1youcontrol)',$ret);
+*/
+    
 }
 
 function insertAbility($text){
@@ -321,21 +408,36 @@ function parseTextForScript($jCard){
     
     
     $ret = parseOutputText($jCard->CardScript); 
+    
+    $ability=  implode($ab_ar, '|');
+    $colors=implode($col_ar, '|');
+    $lands=implode($land_ar, '|');
+    $spells=implode($spells_ar, '|');
+    
+    unset($targ_ar['s']);
+    unset($targ_ar[""]);
+    
+    $targets=implode($targ_ar, '|');
+    $type=implode($type_ar, '|');
+    $actions=implode($act_ar, '|');
+    $condition=implode($cond_ar, '|');
 
 
-
-
-    $ret=preg_replace('/([dD]raws?) a card/','$1 one card',$ret);
-
-    $ret=preg_replace('/([dD]iscards?) a card/','$1 one card',$ret);
-
+    //Corrections
     $ret = str_replace('{tap}','{TAP}',$ret);
+    $ret=preg_replace('/(draws?) a card/i','$1 one card',$ret);
+    $ret=preg_replace('/(discards?) a card/i','$1 one card',$ret);
 
+    //F/C
     $ret = preg_replace('/([+-]?[0-9XYZ]*\/[+-]?[0-9XYZ])/', '@($1)', $ret);
+    
+    //Mana
     $ret = preg_replace('/(\{[0-9]?['. implode('',$mana_ar) .']?\})/', 'm($1)', $ret);
-    $ret = preg_replace('/\)m\(/', '', $ret);
+    $ret = preg_replace('/\}\)m\(\{/', '\',\'', $ret);
+    $ret =preg_replace('/m\(\{([^\}]*)\}\)/', 'm(\'$1\')', $ret);
 
-    $ret = preg_replace('/\s([+-]?[0-9XYZ])[\s\.,;]/', ' v($1) ', $ret);
+    $ret = preg_replace('/\s([+-]?[0-9XYZ]*)[\s\.,;]/', ' v($1) ', $ret);
+    
     $ret = preg_replace('/(counters?|tokens?)/i', ' v($1) ', $ret);
 
 
@@ -353,51 +455,10 @@ function parseTextForScript($jCard){
 
 
 
-    $ability=  implode($ab_ar, '|');
-    $colors=implode($col_ar, '|');
-    $lands=implode($land_ar, '|');
-    $spells=implode($spells_ar, '|');
     
-    unset($targ_ar['s']);
-    unset($targ_ar[""]);
-    
-    $targets=implode($targ_ar, '|');
-    $type=implode($type_ar, '|');
-    $actions=implode($act_ar, '|');
-    $condition=implode($cond_ar, '|');
-    
-    //DA GUARDARE $ret = preg_replace('/[Tt]arget (([v@])\([^\)]*\)/', 't($1$2)', $ret);
-    
-    $ret = preg_replace('/[Tt]arget (non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', 't($1$2$3$4)', $ret);
-    
-    $ret = preg_replace('/(to) (that|an|a)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', '$1$2 t($3$4)', $ret);
-    
-    $ret = preg_replace('/(all) (non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', '$1$2 t($3$4)', $ret);
-    
-    $ret = preg_replace('/t\(([^\)]*)\),\s?(and)?\/?(or)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', 't($1 $2 $4$5$6)', $ret);
-        
-    $ret = preg_replace('/(non-?)?('.$targets.'|'.$actions.'|'.$type .')?\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.') (has|gets?)/i', 't($1$2$3$4) $5', $ret);
-        
-    while (preg_match('/t\(([^\)]*)\),?\s?(and)?\/?(or)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', $ret)){    
-
-	
-	$ret = preg_replace('/t\(([^\)]*)\),?\s?(and)?\/?(or)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', 't($1 $2 $4$5$6)', $ret);
-	
-    }
-    
-    $ret = preg_replace('/\],\s$/', ']', $ret);
-    
-    $ret= preg_replace('/('.$targets.') you control/i','t($1youcontrol)',$ret);
     
     $ret = preg_replace('/(non)?('.$colors .')\s?('.$type.')? ('.$targets.')/i','v($1$2$3$4)',$ret);
     
-    foreach($ab_ar as $ab){
-	$ret = str_ireplace($ab, 'a('.
-	    ucfirst(
-		str_replace(')','',str_replace(' ','',str_replace('a(','', $ab)))).')'
-	    , $ret);
-    }
-    unset($ab);
     foreach($pha_ar as $p){
 	$ret=str_ireplace(' '.$p, ' p('.  strtolower(str_replace(' ', '', $p)).')' , $ret);
     }
@@ -436,22 +497,32 @@ function parseTextForScript($jCard){
 }
 
 function parseFunctions($text){
+       $ret = &$text;   
     
-    $ret=&$text;
 /*    
     if(preg_match('/deals? /i', $ret)){
 	echo $ret."\n";
     }
 */
-    $ret=preg_replace('/draw ([\$v][\(\{][^\}^\)]*[\}\)]) cards?/i','func_drawCards:$1',$ret);
-    $ret=preg_replace('/([\$t][\(\{][^\}^\)]*[\}\)])?\s?discards? ([\$v][\(\{][^\}^\)]*[\}\)]) cards?\s?(at)?\s?(random)?/i','func_discardCards:$2 :$1 :$4',$ret);
-    $ret=preg_replace('/deals? ([\$v][\(\{][^\}^\)]*[\}\)]) (damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealDamagesTo:$1 :$3',$ret);
-    $ret=preg_replace('/deals? ([\$v][\(\{][^\}^\)]*[\}\)]) (combat damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealCombatDamagesTo:$1 :$3',$ret);
-    $ret=preg_replace('/gains? ([\$a][\(\{][^\}^\)]*[\}\)])/i','func_gains:$1',$ret);
-    $ret=preg_replace('/gets? ([\$@][\(\{][^\}^\)]*[\}\)])/i','func_gets:$1',$ret);
+    $ret=preg_replace('/draw v\(([^\)]*)\) cards?/i','drawCards({\'howmany\':$1});',$ret);
+    $ret=preg_replace('/draw (\$\([^\)]*\)) cards?/i','drawCards({\'howmany\':$1});',$ret);
+    
+    //$ret=preg_replace('/deals? ([\$v][\(\{][^\}^\)]*[\}\)]) (damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealDamagesTo:$1 :$3',$ret);
+    
+    //FATTA A META $ret=preg_replace('/deals? v\(([^\)]*)\) (combat damage|damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealDamagesTo:$1 :$3',$ret);
+    
+    //$ret=preg_replace('/deals? ([\$v][\(\{][^\}^\)]*[\}\)]) (combat damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealCombatDamagesTo:$1 :$3',$ret);  
+    
+    //DA FARE $ret=preg_replace('/([\$t][\(\{][^\}^\)]*[\}\)])?\s?discards? ([\$v][\(\{][^\}^\)]*[\}\)]) cards?\s?(at)?\s?(random)?/i','func_discardCards:$2 :$1 :$4',$ret);
+    
+    
+    
+    $ret=preg_replace('/ gains? ([\$a][\(\{][^\}^\)]*[\}\)])/i','func_gains:$1',$ret);
+    
+    $ret=preg_replace('/ gets? ([\$@][\(\{][^\}^\)]*[\}\)])/i','func_gets:$1',$ret);
+    
     $ret=preg_replace('/skip (your) (next) ([\$s][\(\{][^\}^\)]*[\}\)])/i','func_skyp:$1 :$2 :$3',$ret);
-    
-    
+   
 /*    
     if(preg_match('/deals? /i', $ret)||preg_match('/func_deal/i', $ret)){
 	echo $ret."\n";
