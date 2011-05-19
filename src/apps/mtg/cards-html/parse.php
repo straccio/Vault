@@ -26,7 +26,7 @@ $col_ar=array('white','black','red','green','blue','basic','multicolored');
 $mana_ar=array('G','B','R','W','U','X','Y','Z');
 $land_ar=array('forests?','swamps?','islands?','plains?','mountains?');
 $act_ar=array('attacking','blocking','attacckers','blockers');
-$cond_ar=array('kicked','face-down','untapped','tapped','activated','unblocked','enchanted','\$\{fc\}');
+$cond_ar=array('kicked','face up','face-up','face down','face-down','untapped','tapped','activated','unblocked','enchanted','\$\{fc\}');
 $pha_ar=array('beginning phase','combat phase','first main phase','second main phase','main phase','end phase');
 $step_ar=array('draw step','end step','tap step','untap step','upkeep step','upkeep','beginning of combat step','declare attackers','declare blockers step',
 	'combat damage step','end of combat step','end of combat','end of turn step','end of turn','clean up step'
@@ -370,7 +370,7 @@ function parseTextForScript($jCard){
     
     $ret = preg_replace('/[Tt]arget (non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', 't($1$2$3$4)', $ret);
     
-    $ret = preg_replace('/(to) (that|a)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', '$1$2 t($3$4)', $ret);
+    $ret = preg_replace('/(to) (that|an|a)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', '$1$2 t($3$4)', $ret);
     
     $ret = preg_replace('/(all) (non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', '$1$2 t($3$4)', $ret);
     
@@ -386,6 +386,8 @@ function parseTextForScript($jCard){
     }
     
     $ret = preg_replace('/\],\s$/', ']', $ret);
+    
+    $ret= preg_replace('/('.$targets.') you control/i','t($1youcontrol)',$ret);
     
     $ret = preg_replace('/(non)?('.$colors .')\s?('.$type.')? ('.$targets.')/i','v($1$2$3$4)',$ret);
     
@@ -445,6 +447,11 @@ function parseFunctions($text){
     $ret=preg_replace('/([\$t][\(\{][^\}^\)]*[\}\)])?\s?discards? ([\$v][\(\{][^\}^\)]*[\}\)]) cards?\s?(at)?\s?(random)?/i','func_discardCards:$2 :$1 :$4',$ret);
     $ret=preg_replace('/deals? ([\$v][\(\{][^\}^\)]*[\}\)]) (damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealDamagesTo:$1 :$3',$ret);
     $ret=preg_replace('/deals? ([\$v][\(\{][^\}^\)]*[\}\)]) (combat damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealCombatDamagesTo:$1 :$3',$ret);
+    $ret=preg_replace('/gains? ([\$a][\(\{][^\}^\)]*[\}\)])/i','func_gains:$1',$ret);
+    $ret=preg_replace('/gets? ([\$@][\(\{][^\}^\)]*[\}\)])/i','func_gets:$1',$ret);
+    $ret=preg_replace('/skip (your) (next) ([\$s][\(\{][^\}^\)]*[\}\)])/i','func_skyp:$1 :$2 :$3',$ret);
+    
+    
 /*    
     if(preg_match('/deals? /i', $ret)||preg_match('/func_deal/i', $ret)){
 	echo $ret."\n";
