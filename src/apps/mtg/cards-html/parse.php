@@ -181,7 +181,8 @@ function updateCard($jCard,$cname){
 				$card->setTexten(parseOutputText($jCard->CardText));
 				$card->setCost(parseOutputText($jCard->ManaCost));
 				$card->setConvertedCost(parseOutputText($jCard->ConvertedManaCost));
-				$card->setScript(parseTextForScript($jCard));
+				//$card->setScript(parseTextForScript($jCard));
+				$card->setScript(parseScript(parseOutputText($jCard->CardScript),$jCard->CardName));
 				if($jCard->FlavorText){
 					$card->setFlavor(parseOutputText($jCard->FlavorText));
 				}
@@ -202,8 +203,22 @@ function updateCard($jCard,$cname){
 	//print_r($card->toArray());
 }
 
-function parseScript($text){
-    return parseAbilitys(parseFC(parseTargets($text)));
+
+function parseScript($text,$name){
+    if($name){
+	$text = preg_replace('/'.parseOutputText($name).'s?/i', '${me}',$text);
+    }
+    parseCost($text);
+    parseFC($text);
+    parseNumbers($text);
+    parseMana($text);
+    parseAbilitys($text);
+    parseTypes($text);
+    parseTargets($text);
+    $text = preg_replace('/([@mcavpslts]\([^\)]*\))/',' $1 ',$text);
+   return $text;
+    
+    
     /*
     
     $ret= parseFunctions(
@@ -218,12 +233,48 @@ function parseScript($text){
      */
 }
 
-function parseFC(&$text){
+function parseTypes(&$text){
+    global
+	$type_ar,
+	$subtype_ar;
+    
     $ret=&$text;
+    
+    $ret=preg_replace('/(non)?-?\s?('.  implode('|', $type_ar).')\s?(non)?-?('.implode('|', $subtype_ar).')/i', '{type:\'Type\',value:\'$1$2 $3$4\'}', $ret);
+}
+
+function parseFC(&$text){
+    $ret=&$text;    
     //F/C
-    $ret = preg_replace('/([+-]?[0-9XYZ]*\/[+-]?[0-9XYZ])/', '@($1)', $ret);
+    $ret = preg_replace('/([+-]?[0-9XYZ]*\/[+-]?[0-9XYZ])/', '{type:\'FC\',value:\'$1\'}', $ret);
     
     return $ret;
+}
+
+function parseMana(&$text){
+    global
+	$mana_ar;
+    $ret=&$text;
+    //Mana
+    $ret = preg_replace('/(\{[0-9]?['. implode('',$mana_ar) .']?\})/', 'm($1)', $ret);
+    $ret = preg_replace('/\}\)m\(\{/', '\',\'', $ret);
+    $ret =preg_replace('/ ([XYZ]) /', 'm(\'$1\')', $ret);
+}
+
+function parseNumbers(&$text){
+    $ret=&$text;
+    $i=0;
+    foreach($numbers_ar as $n){
+	$ret=str_replace(' '.$n.' ',' v('.$i.') ',$ret);
+	$i++;
+    }
+
+    $ret = preg_replace('/^([+-]?[0-9XYZ]):?/', 'v($1):', $ret);
+}
+
+function parseCost(&$text){
+    $ret=&$text;
+    $ret = preg_replace('/^[^:]*:/','${cost}:', $ret);
 }
 
 function parseAbilitys(&$text){
@@ -238,6 +289,12 @@ function parseAbilitys(&$text){
 		str_replace(')','',str_replace(' ','',str_replace('a(','', $ab)))).')'
 	    , $ret);
     }
+    
+    $ret = preg_replace('/[Pp]rotection from the ([^\s^,^\.^;^:\]]*)/','a($1Protection)',$ret);
+    $ret = preg_replace('/[Pp]rotection from ([^\s^,^\.^;^:\]]*)/','a($1Protection)',$ret);
+    $ret = preg_replace('/(a\([^\)]*[Pp]rotection\)) and from ([^\s^,^\.^;^:\]]*)/','$1 a($2Protection)',$ret);
+    $ret = preg_replace('/[Aa]ffinity for ([^\s^,^\.^;^:\]]*)/','a($1Affinity)',$ret);
+    $ret = preg_replace('/(a\([^\)]*[Aa]ffinity\)) and from ([^\s^,^\.^;^:\]]*)/','$1 a($2Affinity)',$ret);
     
     return $ret;
 }
@@ -307,8 +364,8 @@ function insertAbility($text){
 			$s = new Abscript();
 			$t=parseAbility(substr(trim($ab),2));
 			if($t!=''){
-				$s->setAbility(parseScript(trim($t)));
-				$s->setSample(parseScript(trim($ab."]")));
+				$s->setAbility(parseAbility(trim($t)));
+				$s->setSample(trim($ab."]"));
 				try {
 					$s->save();	
 				} catch (Exception $e) {
@@ -321,8 +378,8 @@ function insertAbility($text){
 					if($sab ){
 						$s = new Abscript();
 						
-						$s->setAbility(parseScript(trim($sab)));
-						$s->setSample(parseScript(trim($sab)));
+						$s->setAbility(parseAbility(trim($sab)));
+						$s->setSample(trim($sab));
 						try {
 							$s->save();	
 						} catch (Exception $e) {
@@ -348,23 +405,25 @@ function parseAbility($text){
 		'escapeFC',
 		$ret);
 	*/
+	$ret = preg_replace('/@\([^\)]*\)/',' ${FC} ',$ret);
+	$ret = preg_replace('/m\([^\)]*\)/',' ${Mana} ', $ret);
 	
-	$ret = preg_replace('/([@mcavpslts]\([^\)]*\))/',' $1 ',$ret);
+	
 	$ret=str_replace('  ', ' ', $ret);
 	
-	$ret = preg_replace('/@\([^\)]*\)/','${fc}',$ret);
+	
 	//$ret = preg_replace('/m\([^\)]*\)([^:]?):/','${cost}$1:', $ret);
-	$ret = preg_replace('/^[^:]*:/','${cost}:', $ret);
-	$ret = preg_replace('/m\([^\)]*\)/',' ${mana} ', $ret);
-	$ret = preg_replace('/c\([^\)]*\)/',' ${condition} ', $ret);
-	$ret = preg_replace('/a\([^\)]*\)/',' ${ability} ', $ret);
-	$ret = preg_replace('/v\([^\)]*\)/',' ${val} ', $ret);
-	$ret = preg_replace('/p\([^\)]*\)/',' ${phase} ', $ret);
-	$ret = preg_replace('/s\([^\)]*\)/',' ${step} ', $ret);
-	$ret = preg_replace('/l\([^\)]*\)/',' ${loc} ', $ret);
-	$ret = preg_replace('/t\([^\)]*\)/',' ${target} ', $ret);	
-	$ret = preg_replace('/t\(v\([^\)\)]*\)/',' ${target} ', $ret);
-	$ret = preg_replace('/\s\([^\)]*\)/','',$ret); 
+	
+	
+	//$ret = preg_replace('/c\([^\)]*\)/',' ${condition} ', $ret);
+	$ret = preg_replace('/a\([^\)]*\)/',' ${Ability} ', $ret);
+	$ret = preg_replace('/v\([^\)]*\)/',' ${Val} ', $ret);
+	//$ret = preg_replace('/p\([^\)]*\)/',' ${phase} ', $ret);
+	//$ret = preg_replace('/s\([^\)]*\)/',' ${step} ', $ret);
+	//$ret = preg_replace('/l\([^\)]*\)/',' ${loc} ', $ret);
+	//$ret = preg_replace('/t\([^\)]*\)/',' ${target} ', $ret);	
+	//$ret = preg_replace('/t\(v\([^\)\)]*\)/',' ${target} ', $ret);
+	//$ret = preg_replace('/\s\([^\)]*\)/','',$ret); 
 	
 	$ret=str_replace('  ', ' ', $ret);
 	if(trim(preg_replace('/\$\{ability\}[\.,\s]?/','',$ret))!=''){
