@@ -468,7 +468,9 @@ function parseEvents($text){
     $ret=preg_replace('/at the (beginning|end) of (your|opponents?|players?) ([\$][\(\{][^\}^\)]*[\}\)])/i','event_$1:\${target} :$3',$ret);
     $ret=preg_replace('/at the (beginning|end) of (your|opponents?|players?) ([\sp][\(\{][^\}^\)]*[\}\)])/i','event_$1:t($2) :$3',$ret);
     $ret=preg_replace('/whenever ([\$sp][\(\{][^\}^\)]*[\}\)]) ('.implode('|', $act_ar).')/i','event_whenever:$1 :$2',$ret);
-    $ret=preg_replace('/As an additional cost to cast ([\$][\(\{][^\}^\)]*[\}\)]),([^\.]*)/i','event_to:$1 :${$2}',$ret);
+    $ret=preg_replace('/As an additional cost to cast ([\$][\(\{][^\}^\)]*[\}\)]),([^\.]*)/i','event_toCast:$1 :${$2}',$ret);
+    //$ret=preg_replace('/(When)?\s?([\$t][\(\{][^\}^\)]*[\}\)]) enters? the ([\$l][\(\{][^\}^\)]*[\}\)]) /i','event_enter:$2 :$3 :$4',$ret);
+    
     return $ret;
 }
 
