@@ -1,0 +1,17 @@
+tmp
+.DS_Store
+*.tmp
+*.log
+*.bck
+*.bak
+*.old
+/src/nbproject/private/
+/lib/
+/src/inc/smarty
+/src/js/ext3
+/src/js/ext4
+/src/js/sencha-touch
+/src/js/jquery.js
+/src/apps/summon
+/src/apps/mtg/cards-html/html
+/src/apps/mtg/imgs/cards
