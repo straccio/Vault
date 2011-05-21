@@ -15,82 +15,105 @@ $xsl->load('parse.xslt');
 //$dirlist = scandir(".");
 
 $numbers_ar = array('zero','one','two','three','four','five','six','seven','eight','nine','ten');
-$ab_ar=array(
-    'flanking','intimidate','flying','vigilance','reach','trample','flash','a\(flash\)back','defender','fear','kicker','multia(kicker)','haste','metalcraft',
-    'first strike','morph','evoke','convoke','amplify','plainscycling','infect','echo','hellbent','suspend','banding','regenerate','deathtouch','rampage',
-    'persist','conspire','exalted','haunt','shroud','buyback','unearth','fading','split second','graft','bushido','modular-sunburst','cycling','cumulative upkeep',
-    'cascade','madness','annihilator','storm','shadow','prowl','vanishing','changeling','entwine','threshold','Landfall','swampwalk','mountainwalk','plainswalk',
-    'islandwalk','forestwalk','legendary landwalk','wither','infect'
+$colors_ar=array('white','black','red','green','blue','basic','multicolored','monocolored','colorless','any colors?','all colors');
+$colors_r=implode('|',$colors_ar);
+$manas_ar=array('G','B','R','W','U','X','Y','Z');
+$manas_r=implode('|',$manas_ar);
+$abilities_ar = array(
+    'Deathtouch','Defender','Double Strike','Enchant','Equip','First Strike','Flying','Haste','Intimidate','Landwalk','Lifelink','Protection','Reach','Shroud',
+    'Trample','Vigilance','Banding','Rampage','Cumulative Upkeep','Flanking','Phasing','Buyback','Shadow','Cycling','Echo','Horsemanship','Fading','Kicker','Flashback','Flash',
+    'Madness','Fear','Morph','Amplify','Provoke','Storm','Affinity','Entwine','Modular','Sunburst','Bushido','Soulshift','Splice','Offering','Ninjutsu','Epic','Convoke',
+    'Dredge','Transmute','Bloodthirst','Haunt','Replicate','Forecast','Graft','Recover','Ripple','Split Second','Suspend','Vanishing','Absorb','Aura Swap','Delve',
+    'Fortify','Frenzy','Gravestorm','Poisonous','Transfigure','Champion','Changeling','Evoke','Hideaway','Prowl','Reinforce','Conspire','Persist','Wither','Retrace',
+    'Devour','Exalted','Unearth','Cascade','Annihilator','Level Up','Rebound','Totem Armor','Infect','Battle Cry','Living Weapon','mana ability'
 );
-$col_ar=array('white','black','red','green','blue','basic','multicolored');
-$mana_ar=array('G','B','R','W','U','X','Y','Z');
-$land_ar=array('forests?','swamps?','islands?','plains?','mountains?');
-$act_ar=array('attacking','blocking','attacckers','blockers');
-$cond_ar=array('kicked','face up','face-up','face down','face-down','untapped','tapped','activated','unblocked','enchanted','\$\{fc\}');
-$pha_ar=array('beginning phase','combat phase','first main phase','second main phase','main phase','end phase');
-$step_ar=array('draw step','end step','tap step','untap step','upkeep step','upkeep','beginning of combat step','declare attackers','declare blockers step',
-	'combat damage step','end of combat step','end of combat','end of turn step','end of turn','clean up step'
+$abilities_r=implode('|',$abilities_ar);
+$types_ar = array(
+    'Opponents?','Permanents?','Players?','he or she','Artifacts?','Creatures?','Enchantments?','Instants?','Lands?','Planeswalkers?','Sorceries?','Tribals?','Planes?','Vanguards?',
+    'Schemes?','Spells?','Mana Abilities','Abilities','Sorcery','Wall'
 );
-$time_ar=array('end of turn');
-//$spells_ar=array('permanents?','lands?','spells?','instants?','sorcerys?','walls?','creatures?','artifacts?','enchantments?','equipments?','abilitys?');
-//'battlefield'
-$obj_ar=array('opponents?','librarys?','cards?','hands?','players?','\$\{me\}');
+$types_r=implode('|',$types_ar);
 
-$loc_ar=array('library','graveyard','battlefield','hands?','out of game');
+$lands_ar=array('forests?','swamps?','islands?','plains?','mountains?','basic lands?');
+$lands_r=implode('|',$lands_ar);
+$zones_ar = array(
+    'Librarys?','Hands?','Battlefields?','Graveyards?','Stacks?','Exiles?','Antes?','Mana Pools?'
+);
+$zones_r=implode('|',$zones_ar);
+$turnStructures_ar = array(
+    'Beginning Phases?','Untap Steps?','Upkeep Steps?','Draw Steps?','Main Phases?','Combat Phases?','Beginning of Combat Steps?','Declare Attackers Steps?',
+    'Declare Blockers Steps?','Combat Damage Steps?','End of Combat Steps?','Ending Phases?','End Steps?','End Of Turns?','Turns?'
+);
+$turnStructures_r=implode('|',$turnStructures_ar);
 
-$p = CardsQuery::create();	
-$type_ar_tmp =$p->setFormatter(ModelCriteria::FORMAT_ARRAY)->groupBy('Typeen')->select(array('Typeen'))->find();
+$actions_ar = array(
+  'Activates?','Attachs?','Attacks?','Blocks?','Casts?','NONFARLOCounter','Destroy','Discards?','Exchange','Exile','Play','Regenerates?','Reveals?','Sacrifice','Search','Shuffle',
+  'Tapp,','Untapp','Taps?','Untaps?','Scry','Fateseal','Clashs?','Planeswalk','Set in Motions?','Abandon','Proliferates?'  
+);
+$actions_r=implode('|',$actions_ar);
 
-$spells_ar=array('permanents?','spells?','sorcerys?','walls?','equipments?','abilitys?','enchantments?','lands?');;
 
-$type_ar=array();
-$subtype_ar=array();
-foreach($type_ar_tmp as $t){
-    $t=explode(' - ', strtolower($t));
-    if(count($t)>1){
-	$t[0]=explode(' ',$t[0]);
-	if(count($t[0])>1){
-	    $t[0][0]=explode( ' ',$t[0][0]);
-	    foreach($t[0][0] as $s){
-		$subtype_ar[$s]= $s;
-	    }
-	    $spells_ar[$t[0][1]]=$t[0][1].'s?';
-	}else{
-	    $spells_ar[$t[0][0]]=$t[0][0].'s?';
-	}
-	$t[1]= explode(' ',$t[1]);
-	foreach($t[1] as $s){
-	    $type_ar[$s]=$s;
-	}
-	
-    }else{
-	$t[0]=explode(' ',$t[0]);
 
-	if(count($t[0])>1){
-	    $t[0][0]=explode($t[0][0], ' ');
-	    foreach($t[0][0] as $s){
-		$subtype_ar[$s]= $s;
-	    }
-	    $spells_ar[$t[0][1]]=$t[0][1].'s?';
-	}else{
-	    $spells_ar[$t[0][0]]=$t[0][0].'s?';
-	}
-    }
+array_multisort($abilities_ar,SORT_DESC);
+array_multisort($types_ar,SORT_DESC);
+array_multisort($types_ar,SORT_DESC);
+array_multisort($actions_ar,SORT_DESC);
 
+$status_ar = array('Equiped','unblockable','Enchanted','Equipment\s?');
+foreach ($actions_ar as &$action){
+    array_push($status_ar,$action.'ed');
 }
-unset($type_ar_tmp);
-$targ_ar=array_merge(
-	$land_ar,
-	array_merge(
-	    $spells_ar,
-	    array_merge(
-		$col_ar,
-		$obj_ar
-	    )
-	)
-);
+$status_r =implode('|',$status_ar );
 
-$typa_ar=array_merge($type_ar,$subtype_ar);
+$active_ar = array();
+foreach ($actions_ar as &$action){
+    array_push($active_ar,$action.'ing');
+}
+$active_r =implode('|',$active_ar );
+
+
+
+$subtypes_ar=array('Urzas','Legendary','Zombie','snow','Spirits?','Vampire','Elf','Faerie','Eye');
+$p = CardsQuery::create();
+$subtypes_ar_tmp =$p->setFormatter(ModelCriteria::FORMAT_ARRAY)->groupBy('Typeen')->select(array('Typeen'))->find();
+foreach($subtypes_ar_tmp as &$st){
+    while($st){
+	$st=str_replace('Urza-s', 'Urzas', $st);
+	if($st=='Tribal Sorcery'){
+	    $a=true;
+	}
+	if(!preg_match('/^('.$types_r.'|'.implode('|', $subtypes_ar).')$/',$st)){
+	    if(preg_match('/('.$types_r.'|'.implode('|', $subtypes_ar).')\s[-]\s(.*)/', $st,$m)){
+		$st=$m[2];
+	    }else{
+		if(preg_match('/([^\-]*)[- ]([^\-]*)/', $st,$m)){
+		    $st='';
+		    array_shift($m);
+		    foreach ($m as $mm){
+			if(strpos($mm,'-') || strpos( $mm,' ')){
+			    $st=$mm;
+			    array_shift($m);
+			}
+		    }
+		    $subtypes_ar=array_merge($subtypes_ar,$m);
+		    
+		}else{
+		    if(strpos($st,'-') || strpos($st,' ')){
+			$a=true;
+		    }
+		    array_push($subtypes_ar, $st);
+		    $st='';
+		}
+	    }
+	}else{
+	    $st='';
+	}
+    }   
+}
+unset($subtypes_ar_tmp);
+$subtypes_ar=array_unique($subtypes_ar);
+$subtypes_r=implode('|',  $subtypes_ar);
+
 $filter = "";
 if(count($argv)<=1){ 
 	$filter = "*";
@@ -190,7 +213,7 @@ function updateCard($jCard,$cname){
 					$card->setArtist(parseOutputText($jCard->Artist));
 				}
 				$card->save();
-				insertAbility($card->getScript());
+				//insertAbility($card->getScript());
 				echo $cname.": ok set ".$card->getSetid()."\n";
 			}else{
 				echo $cname.": ko no card found\n";
@@ -203,19 +226,50 @@ function updateCard($jCard,$cname){
 	//print_r($card->toArray());
 }
 
-
 function parseScript($text,$name){
     if($name){
-	$text = preg_replace('/'.parseOutputText($name).'s?/i', '${me}',$text);
+	$text = preg_replace('/'.parseOutputText($name).'s?/i', '$Me',$text);
+    }    
+    preg_match_all('/@\[[^\]]*\],?/', $text, $actions_ar);
+    $text='';
+    foreach($actions_ar[0] as &$action){
+	parseRepairSomeText($action);
+	$cost = parseCost($action);
+	
+	parseFC($action);
+	parseNumbers($action);
+	parseManas($action);
+	parseStatus($action);
+	parseActive($action);
+	parseTurnStructures($action);
+	parseZones($action);
+	
+	parseTypes($action);
+	parseAbilitys($action);	
+	parseAction($action);
+	
+	//parseTargets($action);
+	$parsers_ar=array('FC','Number','Mana','Status','Active','TurnStructure','Zones','Ability','Type','Action');
+	foreach($parsers_ar as $pa){
+	    $rx='/\{type:\\\''.$pa.'\\\',\s?value:\\\'([^\\\']*)\\\'\}\s?(and)\s?{type:\\\''.$pa.'\\\',\s?value:\\\'([^\\\']*)\\\'\}/i'; 
+	    if(preg_match($rx, $action)){
+		$action = preg_replace($rx, '{type:\''.$pa.'\',value:\'$1,$3\'}', $action);
+	    }
+	}
+	foreach($parsers_ar as $pa){
+	    $rx='/\{type:\\\''.$pa.'\\\',\s?value:\[?([^\}^\]]*)\]?\}\s?,?\s?(or)\s?{type:\\\''.$pa.'\\\',\s?value:\[?([^\}^\]]*)\]?\}/i'; 
+	    if(preg_match($rx, $action)){
+		$action = preg_replace($rx, '{type:\''.$pa.'\',value:[$1,$3]}', $action);
+	    }
+	}
+	
+	
+	insertSingleAbility($action,$cost);
+	$text.='doActiveCardAbility('.$cost.','.$action .')';
+	
     }
-    parseCost($text);
-    parseFC($text);
-    parseNumbers($text);
-    parseMana($text);
-    parseAbilitys($text);
-    parseTypes($text);
-    parseTargets($text);
-    $text = preg_replace('/([@mcavpslts]\([^\)]*\))/',' $1 ',$text);
+    //$text = preg_replace('/([@mcavpslts]\([^\)]*\))/',' $1 ',$text);
+    unset ($action);
    return $text;
     
     
@@ -233,132 +287,198 @@ function parseScript($text,$name){
      */
 }
 
+function parseRepairSomeText(&$text){
+    $ret = &$text;
+    $ret = preg_replace('/^@\[([^\]]*)\],?/', '$1', $ret);
+    $ret = preg_replace('/\([^\)]*\)\s?$/','',$ret);
+    $ret=preg_replace('/(draws?) a card/i','$1 one card',$ret);
+    $ret=preg_replace('/(discards?) a card/i','$1 one card',$ret);
+    $ret=str_replace('Urza-s', '$Urzas', $ret);
+    return $ret;
+}
+
+function parseAction(&$text){
+    global 
+	$actions_r;
+    $ret = &$text;
+    $ret = preg_replace('/[\s\.,^]('.$actions_r.')[\s\.,$]/i',' {type:\'Action\',value:\'$1\'}) ',$ret);
+    //$ret = preg_replace('/^('.$actions_r.')/i',' {type:\'Action\',value:\'$1\'}) ',$ret);
+    return $ret;
+}
+
+function parseActive(&$text){
+    global 
+	$active_r;
+    $ret = &$text;
+    $ret = preg_replace('/('.$active_r.')/i','{type:\'Active\',value:\'$1\'}) ',$ret);
+    return $ret;
+}
+
 function parseTypes(&$text){
     global
-	$type_ar,
-	$subtype_ar;
+	$colors_r,
+	$lands_r,
+	$subtypes_r,
+	$types_r;
     
     $ret=&$text;
-    
-    $ret=preg_replace('/(non)?-?\s?('.  implode('|', $type_ar).')\s?(non)?-?('.implode('|', $subtype_ar).')/i', '{type:\'Type\',value:\'$1$2 $3$4\'}', $ret);
+    $ret=preg_replace('/[\s\.,^](this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')[\s\.,;$]/i', ' {type:\'Type\',value:\'$1$2\'} ', $ret);
 }
 
 function parseFC(&$text){
     $ret=&$text;    
     //F/C
-    $ret = preg_replace('/([+-]?[0-9XYZ]*\/[+-]?[0-9XYZ])/', '{type:\'FC\',value:\'$1\'}', $ret);
-    
-    return $ret;
+    $ret = preg_replace('/([+-]?[0-9XYZ]*\/[+-]?[0-9XYZ])/', ' {type:\'FC\',value:\'$1\'} ', $ret);
 }
 
-function parseMana(&$text){
+function parseManas(&$text){
     global
-	$mana_ar;
+	$manas_ar;
     $ret=&$text;
     //Mana
-    $ret = preg_replace('/(\{[0-9]?['. implode('',$mana_ar) .']?\})/', 'm($1)', $ret);
-    $ret = preg_replace('/\}\)m\(\{/', '\',\'', $ret);
-    $ret =preg_replace('/ ([XYZ]) /', 'm(\'$1\')', $ret);
+    $ret = preg_replace('/\{([0-9]?['. implode('',$manas_ar) .']?)\}/i', ' {type:\'Mana\',value:[\'$1\']} ', $ret);
+    $ret = preg_replace('/\]\}\{type:\'Mana\',value\:\[/', '\',\'', $ret);
+    //$ret =preg_replace('/ ([XYZ])[\s\-]/i', ' {type:\'Mana\',value:[\'$1\']} ', $ret);
 }
 
 function parseNumbers(&$text){
+    global
+	$numbers_ar;
     $ret=&$text;
     $i=0;
     foreach($numbers_ar as $n){
-	$ret=str_replace(' '.$n.' ',' v('.$i.') ',$ret);
+	$ret=preg_replace('/ '.$n.'[\s,\.]/i',' '. $i . ' ',$ret);
 	$i++;
     }
 
-    $ret = preg_replace('/^([+-]?[0-9XYZ]):?/', 'v($1):', $ret);
+    $ret = preg_replace('/^([+\-]?[0-9XYZ])/', ' {type:\'Number\',value:\'$1\'} ', $ret);
+    $ret = preg_replace('/\s([+\-]?[0-9XYZ])/', ' {type:\'Number\',value:\'$1\'} ', $ret);
+    //$ret = preg_replace('/^([+\-]?[0-9])/', ' {type:\'Number\',value:\'$1\'} ', $ret);
 }
 
 function parseCost(&$text){
     $ret=&$text;
-    $ret = preg_replace('/^[^:]*:/','${cost}:', $ret);
+    
+    if(preg_match('/Add one mana of any color to your mana pool\./',$ret) ){
+	$ret=&$ret;
+    }
+    
+
+    if(preg_match('/^\{[^:]*:/',$ret)){
+	$cost = preg_replace('/([^:]*): .*/','$1', $ret);
+	$cost = str_replace('{tap}','{TAP}',$cost);
+	$cost = str_replace('{', '\'', $cost);
+	$cost = str_replace('}', '\'', $cost);
+	//$cost = str_replace('$\'me\'','${me}',$cost);
+	
+	$cost = ' {type:\'Cost\',value:['.$cost.']} : ';
+	
+	$ret = preg_replace('/(^{[^:]*): /',$cost, $ret);
+	
+	$ret = str_replace($cost,'',$ret);
+	return $cost;
+    } 
+    
 }
 
 function parseAbilitys(&$text){
     global
-	$ab_ar;
+	$colors_r,
+	$abilities_r;// _ar;
     
     $ret=&$text;
     
-    foreach($ab_ar as &$ab){
-	$ret = str_ireplace($ab, 'a('.
-	    ucfirst(
-		str_replace(')','',str_replace(' ','',str_replace('a(','', $ab)))).')'
-	    , $ret);
-    }
+    $rx='(this|isnt|is|non)?-?\s?a?\s?('.$abilities_r.')\s?(from)?\s?(the)?\s?('.$colors_r.')?';
     
-    $ret = preg_replace('/[Pp]rotection from the ([^\s^,^\.^;^:\]]*)/','a($1Protection)',$ret);
-    $ret = preg_replace('/[Pp]rotection from ([^\s^,^\.^;^:\]]*)/','a($1Protection)',$ret);
-    $ret = preg_replace('/(a\([^\)]*[Pp]rotection\)) and from ([^\s^,^\.^;^:\]]*)/','$1 a($2Protection)',$ret);
-    $ret = preg_replace('/[Aa]ffinity for ([^\s^,^\.^;^:\]]*)/','a($1Affinity)',$ret);
-    $ret = preg_replace('/(a\([^\)]*[Aa]ffinity\)) and from ([^\s^,^\.^;^:\]]*)/','$1 a($2Affinity)',$ret);
+    $ret=preg_replace('/^'.$rx.'/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
+    $ret=preg_replace('/'.$rx.'$/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
+    $ret=preg_replace('/[\s,\.;^:]'.$rx.'[\s,\.;]/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
+    
+    if(true==false){
+    foreach($abilities_ar as &$ab){
+	$ret = str_ireplace($ab, ' {type:\'Ability\',value:\''.str_replace(' ','',$ab).'\'}', $ret);
+    }
+    }
+    $ret = preg_replace('/[Pp]rotection from the ([^\s^,^\.^;^:\]]*)/i',' {type:\'Ability\',value:\'$1Protection\'} ',$ret);
+    $ret = preg_replace('/[Pp]rotection from ([^\s^,^\.^;^:\]]*)/i',' {type:\'Ability\',value:\'$1Protection\'} ',$ret);
+    $ret = preg_replace('/(a\([^\}]*[Pp]rotection\)) and from ([^\s^,^\.^;^:\]]*)/i','$1 {type:\'Ability\',value:\'$2Protection\'} ',$ret);
+    
+    $ret = preg_replace('/[Aa]ffinity for ([^\s^,^\.^;^:\]]*)/i',' {type:\'Ability\',value:\'$1Affinity\'} ',$ret);
+    $ret = preg_replace('/(a\([^\}]*[Aa]ffinity\)) and from ([^\s^,^\.^;^:\]]*)/i','$1 {type:\'Ability\',value:\'$2Affinity\'} ',$ret);
     
     return $ret;
 }
 
-function parseTargets(&$text){
+function parseTurnStructures(&$text){
     global
-	$ab_ar,
-	    $col_ar,
-	    $land_ar,
-	    $spells_ar,
-	    $targ_ar,
-	    $typa_ar,
-	    $act_ar,
-	    $cond_ar;
-    
-    unset($targ_ar['s']);
-    unset($targ_ar[""]);
-    
-    $targets=implode($targ_ar, '|');
-    $ability=  implode($ab_ar, '|');
-    $colors=implode($col_ar, '|');
-    $lands=implode($land_ar, '|');
-    $spells=implode($spells_ar, '|');
-    $type=implode($type_ar, '|');
-    $actions=implode($act_ar, '|');
-    $condition=implode($cond_ar, '|');
+	 $turnStructures_ar;
     
     $ret=&$text;
     
-    /*  DA FARE function getTarget({});  
-    
-     */
-    $ret = preg_replace('/[Tt]arget (@\([^\)]*\))/', 'target({\'v\':\'$1$2\'});', $ret);
-    
-    return $ret;
-    
-/*
-    $ret = preg_replace('/[Tt]arget (non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', 't($1$2$3$4)', $ret);
-    
-    $ret = preg_replace('/(to) (that|an|a)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', '$1$2 t($3$4)', $ret);
-    
-    $ret = preg_replace('/(all) (non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', '$1$2 t($3$4)', $ret);
-    
-    $ret = preg_replace('/t\(([^\)]*)\),\s?(and)?\/?(or)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', 't($1 $2 $4$5$6)', $ret);
-        
-    $ret = preg_replace('/(non-?)?('.$targets.'|'.$actions.'|'.$type .')?\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.') (has|gets?)/i', 't($1$2$3$4) $5', $ret);
-        
-    while (preg_match('/t\(([^\)]*)\),?\s?(and)?\/?(or)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', $ret)){    
-
-	
-	$ret = preg_replace('/t\(([^\)]*)\),?\s?(and)?\/?(or)?\s?(non-?)?('.$targets.'|'.$actions.'|'.$type .')\s?('. $condition.'|'.$actions.'|'.$colors.'|'.$type .')?\s?('.$targets .'|'.$spells.'|'.$lands.'|'.$type.')?/i', 't($1 $2 $4$5$6)', $ret);
-	
+    $ret = preg_replace('/\s('.implode('|', $turnStructures_ar).')/i',' {type:\'TurnStructures\',value:\'$1\'} ',$ret);
+    return;
+    foreach($turnStructures_ar as $p){
+	$ret=preg_replace(' '.$p, ' {type:\'TurnStructures\',value:\''.  strtolower(str_replace(' ', '', $p)).'\'} ' , $ret);
     }
+    unset($p);
+}
+
+function parseZones(&$text){
+    global
+	$zones_r;
+
+    $ret=&$text;
+    $ret = preg_replace('/ ('.$zones_r.')/i', ' {type:\'Zones\',value:\'$1\'} ' , $ret);
+    return $ret;
+}
+
+function parseStatus(&$text){
+    global
+	$status_r;
+
+    $ret=&$text;
     
-    $ret = preg_replace('/\],\s$/', ']', $ret);
-    
-    $ret= preg_replace('/('.$targets.') you control/i','t($1youcontrol)',$ret);
-*/
-    
+    $ret = preg_replace('/(this|isnt|is|non)?-?\sa?\s??('.$status_r.')/i', ' {type:\'Status\',value:\'$1$2\'} ' , $ret);
+}
+
+function insertSingleAbility($text,$cost){
+    $ab=$text;
+    if($ab){
+	    $s = new Abscript();
+	    $t=parseAbility(trim($ab));
+	    if($t!=''){
+		    $s->setAbility(parseAbility(trim($t)));
+		    $s->setSample(trim($cost.$ab));
+		    try {
+			    $s->save();	
+		    } catch (Exception $e) {
+			    unset($e);
+		    }
+		    unset($s);
+		    preg_match('/a\([^\)]*\)/',$ab,$sabs);
+		    foreach ($sabs as $sab){
+			    //$s = AbscriptQuery::create()->findPk($sab);
+			    if($sab ){
+				    $s = new Abscript();
+
+				    $s->setAbility(parseAbility(trim($sab)));
+				    $s->setSample(trim($cost.$sab));
+				    try {
+					    $s->save();	
+				    } catch (Exception $e) {
+					    unset($e);
+				    }
+				    unset($s);		
+			    }
+		    }
+	    }
+    }
 }
 
 function insertAbility($text){
-	$abs = preg_split('/\],?/', $text);
-	foreach($abs as $ab){
+	preg_match_all('/@\[[^\]]*\],?/', $text, $abs);
+	//$abs = preg_split('/\], /', $text);
+	foreach($abs[0] as $ab){
 		//$s = AbscriptQuery::create()->findPk($ab."]");
 		if($ab){
 			$s = new Abscript();
@@ -397,7 +517,7 @@ function insertAbility($text){
 	unset($sab);
 }
 
-function parseAbility($text){
+function parseAbility(&$text){
 	$ret = $text;
 	/*
 	$ret = preg_replace_callback(
@@ -405,6 +525,9 @@ function parseAbility($text){
 		'escapeFC',
 		$ret);
 	*/
+	$ret = preg_replace('/\{type:\'([^\']*)\'[^\}]*\}/',' ${$1} ',$ret);
+	$ret = preg_replace('/\$Me/',' ${Me} ',$ret);
+	/*
 	$ret = preg_replace('/@\([^\)]*\)/',' ${FC} ',$ret);
 	$ret = preg_replace('/m\([^\)]*\)/',' ${Mana} ', $ret);
 	
@@ -424,13 +547,16 @@ function parseAbility($text){
 	//$ret = preg_replace('/t\([^\)]*\)/',' ${target} ', $ret);	
 	//$ret = preg_replace('/t\(v\([^\)\)]*\)/',' ${target} ', $ret);
 	//$ret = preg_replace('/\s\([^\)]*\)/','',$ret); 
-	
+	*/
 	$ret=str_replace('  ', ' ', $ret);
+	return $ret;
+/*	
 	if(trim(preg_replace('/\$\{ability\}[\.,\s]?/','',$ret))!=''){
 		return $ret;
 	}else{
 		return '';
 	}
+ */
 }
 
 function escapeFC($matches){	
@@ -446,115 +572,6 @@ function parseOutputText($text){
 	return $ret; 
 }
 
-function parseTextForScript($jCard){
-    global
-	$numbers_ar,
-	$ab_ar,
-	$col_ar,
-	$mana_ar,
-	$land_ar,
-	$act_ar,
-	$cond_ar,
-	$obj_ar,	
-	$spells_ar,
-	$type_ar,
-	$subtype_ar,
-	$targ_ar,
-	$pha_ar,
-	$time_ar,
-	$step_ar,
-	$loc_ar;
-    
-    
-    $ret = parseOutputText($jCard->CardScript); 
-    
-    $ability=  implode($ab_ar, '|');
-    $colors=implode($col_ar, '|');
-    $lands=implode($land_ar, '|');
-    $spells=implode($spells_ar, '|');
-    
-    unset($targ_ar['s']);
-    unset($targ_ar[""]);
-    
-    $targets=implode($targ_ar, '|');
-    $type=implode($type_ar, '|');
-    $actions=implode($act_ar, '|');
-    $condition=implode($cond_ar, '|');
-
-
-    //Corrections
-    $ret = str_replace('{tap}','{TAP}',$ret);
-    $ret=preg_replace('/(draws?) a card/i','$1 one card',$ret);
-    $ret=preg_replace('/(discards?) a card/i','$1 one card',$ret);
-
-    //F/C
-    $ret = preg_replace('/([+-]?[0-9XYZ]*\/[+-]?[0-9XYZ])/', '@($1)', $ret);
-    
-    //Mana
-    $ret = preg_replace('/(\{[0-9]?['. implode('',$mana_ar) .']?\})/', 'm($1)', $ret);
-    $ret = preg_replace('/\}\)m\(\{/', '\',\'', $ret);
-    $ret =preg_replace('/m\(\{([^\}]*)\}\)/', 'm(\'$1\')', $ret);
-
-    $ret = preg_replace('/\s([+-]?[0-9XYZ]*)[\s\.,;]/', ' v($1) ', $ret);
-    
-    $ret = preg_replace('/(counters?|tokens?)/i', ' v($1) ', $ret);
-
-
-
-
-    $i=0;
-    foreach($numbers_ar as $n){
-	$ret=str_replace(' '.$n.' ',' v('.$i.') ',$ret);
-	$i++;
-    }
-
-    $ret = preg_replace('/^([+-]?[0-9XYZ]):?/', 'v($1):', $ret);
-    $ret = preg_replace('/'.parseOutputText($jCard->CardName).'s?/i', '${me}',$ret);
-    
-
-
-
-    
-    
-    $ret = preg_replace('/(non)?('.$colors .')\s?('.$type.')? ('.$targets.')/i','v($1$2$3$4)',$ret);
-    
-    foreach($pha_ar as $p){
-	$ret=str_ireplace(' '.$p, ' p('.  strtolower(str_replace(' ', '', $p)).')' , $ret);
-    }
-    unset($p);
-    foreach($step_ar as $s){
-	$ret=str_ireplace(' '.$s, ' s('.  strtolower(str_replace(' ', '', $s)).')' , $ret);
-    }
-    unset($s);
-    foreach($loc_ar as $l){
-	$ret=str_ireplace(' '.$l, ' l('.  strtolower(str_replace(' ', '', $l)).')' , $ret);
-    }
-    unset($l);
-    
-    foreach($cond_ar as $c){
-	$ret=str_ireplace(' '.$c, ' c('.  strtolower(str_replace(' ', '', $c)).')' , $ret);
-    }
-    unset($c);
-
-    $ret = preg_replace('/[Pp]rotection from the ([^\s^,^\.^;^:\]]*)/','a($1Protection)',$ret);
-    $ret = preg_replace('/[Pp]rotection from ([^\s^,^\.^;^:\]]*)/','a($1Protection)',$ret);
-    $ret = preg_replace('/(a\([^\)]*[Pp]rotection\)) and from ([^\s^,^\.^;^:\]]*)/','$1 a($2Protection)',$ret);
-    $ret = preg_replace('/[Aa]ffinity for ([^\s^,^\.^;^:\]]*)/','a($1Affinity)',$ret);
-    $ret = preg_replace('/(a\([^\)]*[Aa]ffinity\)) and from ([^\s^,^\.^;^:\]]*)/','$1 a($2Affinity)',$ret);
-    
-    unset($ability);
-    unset($colors);
-    unset($lands);
-    unset($spells);
-    unset($targets);
-    unset($type);
-    unset($actions);
-    unset($condition);
-    
-    
-    return $ret;
-}
-
 function parseFunctions($text){
        $ret = &$text;   
     
@@ -563,6 +580,7 @@ function parseFunctions($text){
 	echo $ret."\n";
     }
 */
+    //'Add one mana of any color to your mana pool\.'
     $ret=preg_replace('/draw v\(([^\)]*)\) cards?/i','drawCards({\'howmany\':$1});',$ret);
     $ret=preg_replace('/draw (\$\([^\)]*\)) cards?/i','drawCards({\'howmany\':$1});',$ret);
     
