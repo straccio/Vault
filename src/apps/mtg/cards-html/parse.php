@@ -48,8 +48,8 @@ $turnStructures_ar = array(
 $turnStructures_r=implode('|',$turnStructures_ar);
 
 $actions_ar = array(
-  'Activates?','Attachs?','Attacks?','Blocks?','Casts?','NONFARLOCounter','Destroy','Discards?','Exchange','Exile','Play','Regenerates?','Reveals?','Sacrifice','Search','Shuffle',
-  'Tapp,','Untapp','Taps?','Untaps?','Scry','Fateseal','Clashs?','Planeswalk','Set in Motions?','Abandon','Proliferates?'  
+  'Activates?','Attachs?','Attacks?','Blocks?','Casts?','NONFARLOCounter','Destroy','Exchange','Exile','Play','Regenerates?','Reveals?','Sacrifice','Search','Shuffle',
+  'Tapp,','Untapp','Taps?','Untaps?','Scry','Fateseal','Clashs?','Planeswalk','Set in Motions?','Abandon','Proliferates?','Discards?','Draws?'
 );
 $actions_r=implode('|',$actions_ar);
 
@@ -265,7 +265,7 @@ function parseScript($text,$name){
 	    }
 	}
 	
-	parseFunctions($action);
+	//parseFunctions($action);
 	
 	insertSingleAbility($action,$cost);
 	$text.='doActiveCardAbility('.$cost.','.$action .')';
@@ -598,7 +598,7 @@ function parseFunctions(&$text){
     
     //'Add one mana of any color to your mana pool\.'
 //(\{type:\'Player\',[^\}]*\})
-    $ret=preg_replace('/(target|that)?\s?(\{type:\'Player\',[^\}]*\})\s*draw\s*(\{type:\'Number\',[^\}]*\})\s*(additionals?)?\s?cards??/i',' drawCards({target:$2,howmany:$3}); ',$ret);   
+    $ret=preg_replace('/(target |that )?\s?(\{type:\'Player\',[^\}]*\})\s*draw\s*(\{type:\'Number\',[^\}]*\})\s*(additionals?)?\s?cards?/i',' drawCards({target:$2,howmany:$3}); ',$ret);   
     
     $ret=preg_replace('/draw\s*(up to)?\s?(\{type:\'Number\',[^\}]*\})\s*cards?/i',' drawCards({target:null,howmany:$2}); ',$ret);
         
