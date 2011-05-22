@@ -29,9 +29,11 @@ $abilities_ar = array(
 );
 $abilities_r=implode('|',$abilities_ar);
 $types_ar = array(
-    'Opponents?','Permanents?','Players?','he or she','Artifacts?','Creatures?','Enchantments?','Instants?','Lands?','Planeswalkers?','Sorceries?','Tribals?','Planes?','Vanguards?',
+    'Artifacts?','Creatures?','Enchantments?','Instants?','Lands?','Planeswalkers?','Sorceries?','Tribals?','Planes?','Vanguards?',
     'Schemes?','Spells?','Mana Abilities','Abilities','Sorcery','Wall'
 );
+$players_ar=array('Opponents?','Players?','he or she','Owners?');
+$players_r=implode('|', $players_ar);
 $types_r=implode('|',$types_ar);
 
 $lands_ar=array('forests?','swamps?','islands?','plains?','mountains?','basic lands?');
@@ -239,6 +241,7 @@ function parseScript($text,$name){
 	parseFC($action);
 	parseNumbers($action);
 	parseManas($action);
+	parsePlayers($action);
 	parseStatus($action);
 	parseActive($action);
 	parseTurnStructures($action);
@@ -263,6 +266,7 @@ function parseScript($text,$name){
 	    }
 	}
 	
+	parseFunctions($action);
 	
 	insertSingleAbility($action,$cost);
 	$text.='doActiveCardAbility('.$cost.','.$action .')';
@@ -297,11 +301,21 @@ function parseRepairSomeText(&$text){
     return $ret;
 }
 
+function parsePlayers(&$text){
+    global
+	$players_r;
+    $ret = &$text;
+    $ret = preg_replace('/^('.$players_r.')/i',' {type:\'Player\',value:\'$1 $2\'}) ',$ret);
+}
+
 function parseAction(&$text){
     global 
 	$actions_r;
     $ret = &$text;
-    $ret = preg_replace('/[\s\.,^]('.$actions_r.')[\s\.,$]/i',' {type:\'Action\',value:\'$1\'}) ',$ret);
+    
+    $ret = preg_replace('/^[\s\.,]?('.$actions_r.')[\s\.,]/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret);
+    $ret = preg_replace('/[\s\.,]('.$actions_r.')[\s\.,]?$/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret);
+    $ret = preg_replace('/[\s\.,]('.$actions_r.')[\s\.,]/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret);
     //$ret = preg_replace('/^('.$actions_r.')/i',' {type:\'Action\',value:\'$1\'}) ',$ret);
     return $ret;
 }
@@ -322,7 +336,9 @@ function parseTypes(&$text){
 	$types_r;
     
     $ret=&$text;
-    $ret=preg_replace('/[\s\.,^](this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')[\s\.,;$]/i', ' {type:\'Type\',value:\'$1$2\'} ', $ret);
+    $ret=preg_replace('/^[\s\.,]?(this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')[\s\.,;]/i', ' {type:\'Type\',value:\'$1$2\'} ', $ret);
+    $ret=preg_replace('/[\s\.,;](this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')[\s\.,;]?$/i', ' {type:\'Type\',value:\'$1$2\'} ', $ret);
+    $ret=preg_replace('/[\s\.,;](this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')[\s\.,;]/i', ' {type:\'Type\',value:\'$1$2\'} ', $ret);
 }
 
 function parseFC(&$text){
@@ -438,7 +454,7 @@ function parseStatus(&$text){
 
     $ret=&$text;
     
-    $ret = preg_replace('/(this|isnt|is|non)?-?\sa?\s??('.$status_r.')/i', ' {type:\'Status\',value:\'$1$2\'} ' , $ret);
+    $ret = preg_replace('/(this|isnt|is|non)?-?\s?a?\s??('.$status_r.')/i', ' {type:\'Status\',value:\'$1$2\'} ' , $ret);
 }
 
 function insertSingleAbility($text,$cost){
@@ -580,10 +596,15 @@ function parseFunctions($text){
 	echo $ret."\n";
     }
 */
-    //'Add one mana of any color to your mana pool\.'
-    $ret=preg_replace('/draw v\(([^\)]*)\) cards?/i','drawCards({\'howmany\':$1});',$ret);
-    $ret=preg_replace('/draw (\$\([^\)]*\)) cards?/i','drawCards({\'howmany\':$1});',$ret);
     
+    //'Add one mana of any color to your mana pool\.'
+//(\{type:\'Player\',[^\}]*\})
+    //$ret=preg_replace('/(target )?[ ]*(\{type:\'Player\',[^\}]*\})[ ]*draw[ ]*(\{type:\'Number\',[^\}]*\})[ ]*cards?/i',' drawCards({target:$2,howmany:$3}); ',$ret);   
+    if(preg_match('/draw/i',$ret)){
+	$a=true;
+    }
+    $ret=preg_replace('/draw[ ]*(\{type:\'Number\',[^\}]*\})[ ]*cards?/i',' drawCards({target:null,howmany:$1}); ',$ret);
+        
     //$ret=preg_replace('/deals? ([\$v][\(\{][^\}^\)]*[\}\)]) (damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealDamagesTo:$1 :$3',$ret);
     
     //FATTA A META $ret=preg_replace('/deals? v\(([^\)]*)\) (combat damage|damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealDamagesTo:$1 :$3',$ret);
@@ -594,18 +615,18 @@ function parseFunctions($text){
     
     
     
-    $ret=preg_replace('/ gains? ([\$a][\(\{][^\}^\)]*[\}\)])/i','func_gains:$1',$ret);
+    //$ret=preg_replace('/ gains? ([\$a][\(\{][^\}^\)]*[\}\)])/i','func_gains:$1',$ret);
     
-    $ret=preg_replace('/ gets? ([\$@][\(\{][^\}^\)]*[\}\)])/i','func_gets:$1',$ret);
+    //$ret=preg_replace('/ gets? ([\$@][\(\{][^\}^\)]*[\}\)])/i','func_gets:$1',$ret);
     
-    $ret=preg_replace('/skip (your) (next) ([\$s][\(\{][^\}^\)]*[\}\)])/i','func_skyp:$1 :$2 :$3',$ret);
+    //$ret=preg_replace('/skip (your) (next) ([\$s][\(\{][^\}^\)]*[\}\)])/i','func_skyp:$1 :$2 :$3',$ret);
    
 /*    
     if(preg_match('/deals? /i', $ret)||preg_match('/func_deal/i', $ret)){
 	echo $ret."\n";
     }
 */
-    return $ret;
+    //return $ret;
 }
 
 function parseEvents($text){
