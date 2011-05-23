@@ -48,7 +48,7 @@ $turnStructures_ar = array(
 $turnStructures_r=implode('|',$turnStructures_ar);
 
 $actions_ar = array(
-  'Activates?','Attachs?','Attacks?','Blocks?','Casts?','NONFARLOCounter','Destroy','Exchange','Exile','Play','Regenerates?','Reveals?','Sacrifice','Search','Shuffle',
+  'Activates?','Attachs?','Attacks?','Blocks?','Casts?','NONFARLOCounter','Destroy','Exchange','Exile','Play','Regenerates?','Reveals?','Sacrifices?','Search','Shuffle',
   'Tapp,','Untapp','Taps?','Untaps?','Scry','Fateseal','Clashs?','Planeswalk','Set in Motions?','Abandon','Proliferates?','Discards?','Draws?'
 );
 $actions_r=implode('|',$actions_ar);
@@ -243,15 +243,15 @@ function parseScript($text,$name){
 	parsePlayers($action);
 	parseStatus($action);
 	parseActive($action);
-	parseTurnStructures($action);
 	parseZones($action);
 	
 	parseTypes($action);
 	parseAbilitys($action);	
+	parseTurnStructures($action);
 	parseAction($action);
 	
 	//parseTargets($action);
-	$parsers_ar=array('FC','Number','Mana','Status','Active','TurnStructure','Zones','Ability','Type','Action');
+	$parsers_ar=array('FC','Number','Mana','Status','Active','TurnStructure','Zone','Ability','Type','Action');
 	foreach($parsers_ar as $pa){
 	    $rx='/\{type:\\\''.$pa.'\\\',\s?value:\\\'([^\\\']*)\\\'\}\s?(and)\s?{type:\\\''.$pa.'\\\',\s?value:\\\'([^\\\']*)\\\'\}/i'; 
 	    if(preg_match($rx, $action)){
@@ -259,9 +259,9 @@ function parseScript($text,$name){
 	    }
 	}
 	foreach($parsers_ar as $pa){
-	    $rx='/\{type:\\\''.$pa.'\\\',\s?value:\[?([^\}^\]]*)\]?\}\s?,?\s?(or)\s?{type:\\\''.$pa.'\\\',\s?value:\[?([^\}^\]]*)\]?\}/i'; 
+	    $rx='/\{type:\\\''.$pa.'\\\',\s?value:\[?([^\}^\]]*)\]?\}\s?,?\s?(or)\s?(the)?\s?{type:\\\''.$pa.'\\\',\s?value:\[?([^\}^\]]*)\]?\}/i'; 
 	    if(preg_match($rx, $action)){
-		$action = preg_replace($rx, '{type:\''.$pa.'\',value:[$1,$3]}', $action);
+		$action = preg_replace($rx, '{type:\''.$pa.'\',value:[$1,$4]}', $action);
 	    }
 	}
 	
@@ -304,7 +304,8 @@ function parsePlayers(&$text){
     global
 	$players_r;
     $ret = &$text;
-    $ret = preg_replace('/(each)?\s?('.$players_r.')/i',' {type:\'Player\',value:\'$1$2\'}) ',$ret);
+    //$ret = preg_replace('/(each)?\s?('.$players_r.')/i',' {type:\'Player\',value:\'$1$2\'}) ',$ret);
+    parser('Player', '('.$players_r.')', '$1$2', $ret);
 }
 
 function parseAction(&$text){
@@ -312,10 +313,11 @@ function parseAction(&$text){
 	$actions_r;
     $ret = &$text;
     
-    $ret = preg_replace('/^[\s\.,]?('.$actions_r.')[\s\.,]/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret);
-    $ret = preg_replace('/[\s\.,]('.$actions_r.')[\s\.,]?$/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret);
-    $ret = preg_replace('/[\s\.,]('.$actions_r.')[\s\.,]/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret);
-    //$ret = preg_replace('/^('.$actions_r.')/i',' {type:\'Action\',value:\'$1\'}) ',$ret);
+    //$ret = preg_replace('/^[\s\.,]?('.$actions_r.')[\s\.,]/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret);
+    //$ret = preg_replace('/[\s\.,]('.$actions_r.')[\s\.,]?$/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret);
+    //$ret = preg_replace('/[\s\.,]('.$actions_r.')[\s\.,]/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret); 
+    parser('Action', '('.$actions_r.')', '$1 $2', $ret);
+    
     return $ret;
 }
 
@@ -335,25 +337,28 @@ function parseTypes(&$text){
 	$types_r;
     
     $ret=&$text;
-    $ret=preg_replace('/^[\s\.,]?(this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')[\s\.\,;]/i', ' {type:\'Type\',value:\'$1$2\'} ', $ret);
-    $ret=preg_replace('/[\s\.,;](this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')[\s\.\,;]?$/i', ' {type:\'Type\',value:\'$1$2\'} ', $ret);
-    $ret=preg_replace('/[\s\.,;](this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')[\s\.\,;]/i', ' {type:\'Type\',value:\'$1$2\'} ', $ret);
+    //$ret=preg_replace('/^[\s\.,]?(this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')[\s\.\,;]/i', ' {type:\'Type\',value:\'$1$2\'} ', $ret);
+    //$ret=preg_replace('/[\s\.,;](this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')[\s\.\,;]?$/i', ' {type:\'Type\',value:\'$1$2\'} ', $ret);
+    //$ret=preg_replace('/[\s\.,;](this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')[\s\.\,;]/i', ' {type:\'Type\',value:\'$1$2\'} ', $ret);
+    parser('Type', '(this|isnt|is|non)?-?\s?a?\s?('. $types_r.'|'. $subtypes_r .'|'.$lands_r.'|'.$colors_r.')', '$1$2', $ret);
 }
 
 function parseFC(&$text){
     $ret=&$text;    
     //F/C
-    $ret = preg_replace('/([+-]?[0-9XYZ]*\/[+-]?[0-9XYZ])/', ' {type:\'FC\',value:\'$1\'} ', $ret);
+    //$ret = preg_replace('/([+-]?[0-9XYZ]*\/[+-]?[0-9XYZ])/', ' {type:\'FC\',value:\'$1\'} ', $ret);
+    parser('FC', "([+\-]?[0-9XYZ]*\\/[+\\-]?[0-9XYZ]*)", '$1', $ret);
 }
 
 function parseManas(&$text){
     global
-	$manas_ar;
+	$manas_r;
     $ret=&$text;
     //Mana
-    $ret = preg_replace('/\{([0-9]?['. implode('',$manas_ar) .']?)\}/i', ' {type:\'Mana\',value:[\'$1\']} ', $ret);
-    $ret = preg_replace('/\]\}\{type:\'Mana\',value\:\[/', '\',\'', $ret);
-    //$ret =preg_replace('/ ([XYZ])[\s\-]/i', ' {type:\'Mana\',value:[\'$1\']} ', $ret);
+    //$ret = preg_replace('/\{([0-9]?['. implode('',$manas_ar) .']?)\}/i', ' {type:\'Mana\',value:[\'$1\']} ', $ret);
+    parser('Mana', '\{([0-9]?['. $manas_r .']?)\}', '$1', $ret);
+    //$ret = preg_replace('/\]\}\{type:\'Mana\',value\:\[/', '\',\'', $ret);
+    
 }
 
 function parseNumbers(&$text){
@@ -362,13 +367,16 @@ function parseNumbers(&$text){
     $ret=&$text;
     $i=0;
     foreach($numbers_ar as $n){
-	$ret=preg_replace('/ '.$n.'[\s,\.]/i',' '. $i . ' ',$ret);
+	$ret=preg_replace('/ '.$n.'[\s\,\.\:\-;]/i',' '. $i . ' ',$ret);
 	$i++;
     }
 
-    $ret = preg_replace('/^([+\-]?[0-9XYZ][\s,\.;])/', ' {type:\'Number\',value:\'$1\'} ', $ret);
-    $ret = preg_replace('/\s([+\-]?[0-9XYZ][\s,\.;])/', ' {type:\'Number\',value:\'$1\'} ', $ret);
-    //$ret = preg_replace('/^([+\-]?[0-9])/', ' {type:\'Number\',value:\'$1\'} ', $ret);
+    //$ret = preg_replace('/^([+\-]?[0-9XYZ][\s,\.;])/', ' {type:\'Number\',value:\'$1\'} ', $ret);
+    //$ret = preg_replace('/[\s,\.;:]([+\-]?[0-9XYZ][\s,\.;]?å$)/', ' {type:\'Number\',value:\'$1\'} ', $ret);
+    //$ret = preg_replace('/[\s,\.;:]([+\-]?[0-9XYZ][\s,\.;])/', ' {type:\'Number\',value:\'$1\'} ', $ret);
+    parser('Number', '([+\-]?[0-9XYZ])', '$1', $ret);
+    
+    
 }
 
 function parseCost(&$text){
@@ -380,12 +388,12 @@ function parseCost(&$text){
     
 
     if(preg_match('/^\{[^:]*:/',$ret)){
-	$cost = preg_replace('/([^:]*): .*/','$1', $ret);
+	$cost = preg_replace('/^([^:]*): .*/','$1', $ret);
 	$cost = str_replace('{tap}','{TAP}',$cost);
 	$cost = str_replace('{', '\'', $cost);
 	$cost = str_replace('}', '\'', $cost);
 	//$cost = str_replace('$\'me\'','${me}',$cost);
-	
+	$cost = str_replace('\'\'', '\',\'', $cost);
 	$cost = ' {type:\'Cost\',value:['.$cost.']} : ';
 	
 	$ret = preg_replace('/(^{[^:]*): /',$cost, $ret);
@@ -393,7 +401,6 @@ function parseCost(&$text){
 	$ret = str_replace($cost,'',$ret);
 	return $cost;
     } 
-    
 }
 
 function parseAbilitys(&$text){
@@ -405,37 +412,34 @@ function parseAbilitys(&$text){
     
     $rx='(this|isnt|is|non)?-?\s?a?\s?('.$abilities_r.')\s?(from)?\s?(the)?\s?('.$colors_r.')?';
     
-    $ret=preg_replace('/^'.$rx.'/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
-    $ret=preg_replace('/'.$rx.'$/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
-    $ret=preg_replace('/[\s,\.;^:]'.$rx.'[\s,\.;]/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
+    //$ret=preg_replace('/^'.$rx.'/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
+    //$ret=preg_replace('/'.$rx.'$/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
+    //$ret=preg_replace('/[\s,\.;^:]'.$rx.'[\s,\.;]/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
+    parser('Ability', '(this|isnt|is|non)?-?\s?a?\s?('.$abilities_r.')\s?(from)?\s?(the)?\s?('.$colors_r.')?', '$1$5$2', $ret);
     
-    if(true==false){
-    foreach($abilities_ar as &$ab){
-	$ret = str_ireplace($ab, ' {type:\'Ability\',value:\''.str_replace(' ','',$ab).'\'}', $ret);
-    }
-    }
-    $ret = preg_replace('/[Pp]rotection from the ([^\s^,^\.^;^:\]]*)/i',' {type:\'Ability\',value:\'$1Protection\'} ',$ret);
-    $ret = preg_replace('/[Pp]rotection from ([^\s^,^\.^;^:\]]*)/i',' {type:\'Ability\',value:\'$1Protection\'} ',$ret);
-    $ret = preg_replace('/(a\([^\}]*[Pp]rotection\)) and from ([^\s^,^\.^;^:\]]*)/i','$1 {type:\'Ability\',value:\'$2Protection\'} ',$ret);
     
-    $ret = preg_replace('/[Aa]ffinity for ([^\s^,^\.^;^:\]]*)/i',' {type:\'Ability\',value:\'$1Affinity\'} ',$ret);
-    $ret = preg_replace('/(a\([^\}]*[Aa]ffinity\)) and from ([^\s^,^\.^;^:\]]*)/i','$1 {type:\'Ability\',value:\'$2Affinity\'} ',$ret);
+    //$ret = preg_replace('/[Pp]rotection from the ([^\s^,^\.^;^:\]]*)/i',' {type:\'Ability\',value:\'$1Protection\'} ',$ret);
+//$ret = parser('Ability', '[Pp]rotection from ([^\s^,^\.^;^:\]]*)', '$1Protection', $ret);
+    //$ret = preg_replace('/[Pp]rotection from ([^\s^,^\.^;^:\]]*)/i',' {type:\'Ability\',value:\'$1Protection\'} ',$ret);
+    //$ret = preg_replace('/(a\([^\}]*[Pp]rotection\)) and from ([^\s^,^\.^;^:\]]*)/i','$1 {type:\'Ability\',value:\'$2Protection\'} ',$ret);
+    //$ret = parser('Ability', '[Pp]rotection from ([^\s^,^\.^;^:\]]*)', '$1Protection', $ret);
+    
+    //$ret = preg_replace('/[Aa]ffinity for ([^\s^,^\.^;^:\]]*)/i',' {type:\'Ability\',value:\'$1Affinity\'} ',$ret);
+//$ret = parser('Ability', '[Aa]ffinity for ([^\s^,^\.^;^:\]]*)', '$1Protection', $ret);
+    //$ret = preg_replace('/(a\([^\}]*[Aa]ffinity\)) and from ([^\s^,^\.^;^:\]]*)/i','$1 {type:\'Ability\',value:\'$2Affinity\'} ',$ret);
     
     return $ret;
 }
 
 function parseTurnStructures(&$text){
     global
-	 $turnStructures_ar;
+	 $turnStructures_r;
     
     $ret=&$text;
     
-    $ret = preg_replace('/\s('.implode('|', $turnStructures_ar).')[\s,\.;]/i',' {type:\'TurnStructures\',value:\'$1\'} ',$ret);
-    return;
-    foreach($turnStructures_ar as $p){
-	$ret=preg_replace(' '.$p, ' {type:\'TurnStructures\',value:\''.  strtolower(str_replace(' ', '', $p)).'\'} ' , $ret);
-    }
-    unset($p);
+    //$ret = preg_replace('/\s('.$turnStructures_r.')[\s,\.;]/i',' {type:\'TurnStructures\',value:\'$1\'} ',$ret);
+    parser('TurnStructures','('.$turnStructures_r.')','$1',$ret);
+    
 }
 
 function parseZones(&$text){
@@ -443,8 +447,8 @@ function parseZones(&$text){
 	$zones_r;
 
     $ret=&$text;
-    $ret = preg_replace('/ ('.$zones_r.')/i', ' {type:\'Zones\',value:\'$1\'} ' , $ret);
-    return $ret;
+    //$ret = preg_replace('/ ('.$zones_r.')/i', ' {type:\'Zones\',value:\'$1\'} ' , $ret);
+    parser('Zone', '('.$zones_r.')', '$1', $ret);
 }
 
 function parseStatus(&$text){
@@ -453,7 +457,8 @@ function parseStatus(&$text){
 
     $ret=&$text;
     
-    $ret = preg_replace('/(this|isnt|is|non)?-?\s?a?\s??('.$status_r.')/i', ' {type:\'Status\',value:\'$1$2\'} ' , $ret);
+    //$ret = preg_replace('/(this|isnt|is|non)?-?\s?a?\s??('.$status_r.')/i', ' {type:\'Status\',value:\'$1$2\'} ' , $ret);
+    parser('Status', '(this|isnt|is|non)?-?\s?a?\s?('.$status_r.')', '$1 $2', $ret);
 }
 
 function insertSingleAbility($text,$cost){
@@ -646,4 +651,14 @@ function parseDuration($text){
     return $ret;
 }
 
+function parser($type,$regExp,$value,&$text){
+    $tappo="[\s\.\-,;:]";
+    $ret=&$text;
+    
+    $ret=preg_replace('/^'.$tappo.'?'.$regExp.$tappo.'/i', ' {type:\''.$type.'\',value:\''.$value.'\'} ', $ret);
+    $ret=preg_replace('/'.$tappo.$regExp.$tappo.'?$/i', ' {type:\''.$type.'\',value:\''.$value.'\'} ', $ret );
+    $ret=preg_replace('/'.$tappo.$regExp.$tappo.'/i', ' {type:\''.$type.'\',value:\''.$value.'\'} ', $ret );
+    $ret=preg_replace('/^'.$regExp.'$/i', ' {type:\''.$type.'\',value:\''.$value.'\'} ', $ret );
+    //return $ret;
+}
 ?>
