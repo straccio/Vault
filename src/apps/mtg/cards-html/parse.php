@@ -15,7 +15,7 @@ $xsl->load('parse.xslt');
 //$dirlist = scandir(".");
 
 $numbers_ar = array('zero','one','two','three','four','five','six','seven','eight','nine','ten');
-$colors_ar=array('white','black','red','green','blue','basic','multicolored','monocolored','colorless','any colors?','all colors');
+$colors_ar=array('white','black','red','green','blue','basic','multicolored','monocolored','colorless','any colors?','all colors?');
 $colors_r=implode('|',$colors_ar);
 $manas_ar=array('G','B','R','W','U','X','Y','Z');
 $manas_r=implode('|',$manas_ar);
@@ -30,10 +30,10 @@ $abilities_ar = array(
 $abilities_r=implode('|',$abilities_ar);
 $types_ar = array(
     'Artifacts?','Creatures?','Enchantments?','Instants?','Lands?','Planeswalkers?','Sorceries?','Tribals?','Planes?','Vanguards?',
-    'Schemes?','Spells?','Mana Abilities','Abilities','Sorcery','Wall','permanents?','Ability'
+    'Schemes?','Spells?','Mana Abilities','Abilities','Sorcery','Walls?','permanents?','Ability'
 );
 $types_r=implode('|',$types_ar);
-$players_ar=array('Opponents?','Players?','he or she','Owners?'.'controllers?');
+$players_ar=array('Opponents?','Players?','he or she','Owners?'.'controllers?','owners?','yours?','you');
 $players_r=implode('|', $players_ar);
 $lands_ar=array('forests?','swamps?','islands?','plains?','mountains?','basic lands?');
 $lands_r=implode('|',$lands_ar);
@@ -49,7 +49,7 @@ $turnStructures_r=implode('|',$turnStructures_ar);
 
 $actions_ar = array(
   'Activates?','Attachs?','Attacks?','Blocks?','Casts?','NONFARLOCounter','Destroy','Exchange','Exile','Play','Regenerates?','Reveals?','Sacrifices?','Search','Shuffle',
-  'Tapp,','Untapp','Taps?','Untaps?','Scry','Fateseal','Clashs?','Planeswalk','Set in Motions?','Abandon','Proliferates?','Discards?','Draws?'
+  'Tapp,','Untapp','Taps?','Untaps?','Scry','Fateseal','Clashs?','Planeswalk','Set in Motions?','Abandon','Proliferates?','Discards?','Draws?','Defends?'
 );
 $actions_r=implode('|',$actions_ar);
 
@@ -78,6 +78,16 @@ $subtypes_ar=array('Urzas','Legendary','Zombie','snow','Spirits?','Vampire','Elf
 $p = CardsQuery::create();
 $subtypes_ar_tmp =$p->setFormatter(ModelCriteria::FORMAT_ARRAY)->groupBy('Typeen')->select(array('Typeen'))->find();
 foreach($subtypes_ar_tmp as &$st){
+    parseRepairSomeText($st);
+    $st=str_replace(' - ',' ',$st);
+    reSpace($st);
+    $st = explode(' ', $st);
+    foreach ($st as &$sti){
+	array_push($subtypes_ar,$sti);
+    }
+	
+
+    /*
     while($st){
 	$st=str_replace('Urza-s', 'Urzas', $st);
 	if($st=='Tribal Sorcery'){
@@ -99,9 +109,6 @@ foreach($subtypes_ar_tmp as &$st){
 		    $subtypes_ar=array_merge($subtypes_ar,$m);
 		    
 		}else{
-		    if(strpos($st,'-') || strpos($st,' ')){
-			$a=true;
-		    }
 		    array_push($subtypes_ar, $st);
 		    $st='';
 		}
@@ -109,10 +116,12 @@ foreach($subtypes_ar_tmp as &$st){
 	}else{
 	    $st='';
 	}
-    }   
+    }
+     */   
 }
 unset($subtypes_ar_tmp);
 $subtypes_ar=array_unique($subtypes_ar);
+$subtypes_ar = explode('|', str_replace('|s?','' , implode('s?|',$subtypes_ar)));
 $subtypes_r=implode('|',  $subtypes_ar);
 
 $filter = "";
@@ -236,7 +245,7 @@ function parseScript($text,$name){
     foreach($actions_ar[0] as &$action){
 	parseRepairSomeText($action);
 	$cost = parseCost($action);
-	
+	parseChoose($action);
 	parseFC($action);
 	parseNumbers($action);
 	parseManas($action);
@@ -316,7 +325,7 @@ function parseAction(&$text){
     //$ret = preg_replace('/^[\s\.,]?('.$actions_r.')[\s\.,]/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret);
     //$ret = preg_replace('/[\s\.,]('.$actions_r.')[\s\.,]?$/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret);
     //$ret = preg_replace('/[\s\.,]('.$actions_r.')[\s\.,]/i',' {type:\'Action\',value:\'$1 $2\'}) ',$ret); 
-    parser('Action', '('.$actions_r.')', '$1 $2', $ret);
+    parser('Action', '('.$actions_r.')', '$1', $ret);
     
     return $ret;
 }
@@ -356,7 +365,7 @@ function parseManas(&$text){
     $ret=&$text;
     //Mana
     //$ret = preg_replace('/\{([0-9]?['. implode('',$manas_ar) .']?)\}/i', ' {type:\'Mana\',value:[\'$1\']} ', $ret);
-    parser('Mana', '\{([0-9]?['. $manas_r .']?)\}', '$1', $ret);
+    parser('Mana', '\{([0-9])?('. $manas_r .')?\\}', '$1$2', $ret,false);
     //$ret = preg_replace('/\]\}\{type:\'Mana\',value\:\[/', '\',\'', $ret);
     
 }
@@ -374,9 +383,17 @@ function parseNumbers(&$text){
     //$ret = preg_replace('/^([+\-]?[0-9XYZ][\s,\.;])/', ' {type:\'Number\',value:\'$1\'} ', $ret);
     //$ret = preg_replace('/[\s,\.;:]([+\-]?[0-9XYZ][\s,\.;]?å$)/', ' {type:\'Number\',value:\'$1\'} ', $ret);
     //$ret = preg_replace('/[\s,\.;:]([+\-]?[0-9XYZ][\s,\.;])/', ' {type:\'Number\',value:\'$1\'} ', $ret);
-    parser('Number', '([+\-]?[0-9XYZ])', '$1', $ret);
+    parser('Number', '[+\-]?([0-9XYZ])', '$1$2', $ret);
     
     
+}
+
+function parseChoose(&$text){
+    $ret=&$text;
+
+    if(preg_match('/^Choose ([^\-]*) - /i',$ret)){
+	$ret = preg_replace('/^Choose ([^\-]*) - /i',' {type:\'Action\',value:\'$1\'} ; ', $ret);
+    }
 }
 
 function parseCost(&$text){
@@ -394,13 +411,14 @@ function parseCost(&$text){
 	$cost = str_replace('}', '\'', $cost);
 	//$cost = str_replace('$\'me\'','${me}',$cost);
 	$cost = str_replace('\'\'', '\',\'', $cost);
+	parseAction($cost);
 	$cost = ' {type:\'Cost\',value:['.$cost.']} : ';
 	
-	$ret = preg_replace('/(^{[^:]*): /',$cost, $ret);
 	
+	$ret = preg_replace('/(^{[^:]*): /',$cost, $ret);
 	$ret = str_replace($cost,'',$ret);
 	return $cost;
-    } 
+    }
 }
 
 function parseAbilitys(&$text){
@@ -458,12 +476,14 @@ function parseStatus(&$text){
     $ret=&$text;
     
     //$ret = preg_replace('/(this|isnt|is|non)?-?\s?a?\s??('.$status_r.')/i', ' {type:\'Status\',value:\'$1$2\'} ' , $ret);
-    parser('Status', '(this|isnt|is|non)?-?\s?a?\s?('.$status_r.')', '$1 $2', $ret);
+    parser('Status', '(this|isnt|is|non)?-?\s?a?\s?('.$status_r.')', '$1$2', $ret);
 }
 
 function insertSingleAbility($text,$cost){
-    $ab=$text;
-    if($ab){
+    $abs=explode(' ; ', $text);
+    foreach ($abs as &$ab){
+    //$ab=$text;
+	if($ab){
 	    $s = new Abscript();
 	    $t=parseAbility(trim($ab));
 	    if($t!=''){
@@ -492,6 +512,7 @@ function insertSingleAbility($text,$cost){
 			    }
 		    }
 	    }
+	}
     }
 }
 
@@ -651,14 +672,34 @@ function parseDuration($text){
     return $ret;
 }
 
-function parser($type,$regExp,$value,&$text){
-    $tappo="[\s\.\-,;:]";
+function parser($type,$regExp,$value,&$text,$useTappo = true){
     $ret=&$text;
+    if(preg_match('/'.$regExp.'/i', $text)){
+	if($useTappo){
+	    $tappo='[\s\.\-,;:]';
+	    $value=preg_replace_callback('/\$[0-9][0-9]?/', "reposRegExpValues_Callback", $value);
+	    preg_match_all('/[^\)]?\(/', $regExp,$m);
+	    $ret=preg_replace('/^('.$tappo.')?'.$regExp.'('.$tappo.')/i', '$1 {type:\''.$type.'\',value:\''.$value.'\'} $'.(count($m[0])+2), $ret);
+	    $ret=preg_replace('/('.$tappo.')'.$regExp.'('.$tappo.')?$/i', '$1 {type:\''.$type.'\',value:\''.$value.'\'} $'.(count($m[0])+2), $ret );
+	    $ret=preg_replace('/('.$tappo.')'.$regExp.'('.$tappo.')/i', '$1 {type:\''.$type.'\',value:\''.$value.'\'} $'.(count($m[0])+2), $ret );
+	    $ret=preg_replace('/^'.$regExp.'$/i', ' {type:\''.$type.'\',value:\''.$value.'\'} ', $ret );
+	}else{
+	    $ret=preg_replace('/'.$regExp.'/i', ' {type:\''.$type.'\',value:\''.$value.'\'} ', $ret );
+	}
+	reSpace($ret);
+    }
     
-    $ret=preg_replace('/^'.$tappo.'?'.$regExp.$tappo.'/i', ' {type:\''.$type.'\',value:\''.$value.'\'} ', $ret);
-    $ret=preg_replace('/'.$tappo.$regExp.$tappo.'?$/i', ' {type:\''.$type.'\',value:\''.$value.'\'} ', $ret );
-    $ret=preg_replace('/'.$tappo.$regExp.$tappo.'/i', ' {type:\''.$type.'\',value:\''.$value.'\'} ', $ret );
-    $ret=preg_replace('/^'.$regExp.'$/i', ' {type:\''.$type.'\',value:\''.$value.'\'} ', $ret );
+    
     //return $ret;
+}
+function reSpace(&$text){
+    while (!(strpos('  ')==false)){
+	$text = str_replace('  ', ' ', $text);
+    }
+}
+function reposRegExpValues_Callback($m){
+    $m=str_replace("$", '', $m[0]);
+    $ret = '$'.($m+1);
+    return $ret;
 }
 ?>
