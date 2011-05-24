@@ -125,7 +125,7 @@ foreach($subtypes_ar_tmp as &$st){
 }
 unset($subtypes_ar_tmp);
 $subtypes_ar=array_unique($subtypes_ar);
-$subtypes_ar = explode('|', str_replace('|s?','' , implode('s?|',$subtypes_ar)));
+$subtypes_ar = explode('|', str_replace('|s?|','|' , implode('s?|',$subtypes_ar)));
 $subtypes_r=implode('|',  $subtypes_ar);
 
 $filter = "";
@@ -281,7 +281,7 @@ function parseScript($text,$name){
 	    }
 	}
 	
-	//parseFunctions($action);
+	parseFunctions($action);
 	
 	insertSingleAbility($action,$cost);
 	$text.='doActiveCardAbility('.$cost.','.$action .')';
@@ -630,8 +630,50 @@ function parseOutputText($text){
 	return $ret; 
 }
 
+function parseFunctionArgs(&$m,$rown){
+    
+    $ret = '(';
+    $i=0;
+    foreach ($m as $k => &$mm){
+	if(!is_numeric($k)){
+	    if($i>0) $ret.=',';
+	    if($mm[$i] == '$Me'){
+		$mm[$rown] = '\''.$mm[$rown].'\'';
+	    }
+	    $ret.=$k.':'.$mm[$rown];
+	    $i++;
+	}
+    }
+    $ret.=')';
+    return $ret;
+}
+
 function parseFunctions(&$text){
-       $ret = &$text;   
+    $ns='MTG';
+    $ret = &$text;
+    $funcs_ar=array(
+	//gets (?p<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?
+	'gets'=>array(
+	    '/(Target)?\s?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})\s*gets?\s*(?P<fc>\{type:\'FC\'[^\}]*\})\s?(?P<ts>until)?\s/i'
+	)
+    );
+    if(preg_match('/ gets? /i', $ret)){
+	$a=true;
+    }
+    foreach ($funcs_ar as $fname=> &$func){	
+	foreach ($func as &$rfunc){
+	    if(preg_match_all($rfunc, $ret,$m)){
+		for($i=0;$i<count($m[0]);$i++){
+		    ///foreach($m as $k=>&$mm){
+			//if(!is_numeric($k)){
+			    $ret=$ns.'.'.$fname.str_replace($m[0], parseFunctionArgs($m, $i), $ret);
+			//}
+		    //}
+		}
+	    }
+	}
+    }
+return;
     
 /*    
     if(preg_match('/deals? /i', $ret)){
