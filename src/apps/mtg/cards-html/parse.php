@@ -54,7 +54,11 @@ $actions_ar = array(
 );
 $actions_r=implode('|',$actions_ar);
 
-$counters_ar=array('charges?','quests?','dooms?','ages?','golds?','kis?','pages?','arrows?','bloods?','fuses?','storages?','boundys?');
+$counters_ar=array(
+    'charges?','quests?','dooms?','ages?','golds?','kis?','pages?','arrows?','bloods?','fuses?','storages?','bountys?','devotions?','screams?','omens?','pupas?',
+    'rustas?','intervention?','ices?','wishs?','paralyzations?','energys?','delays?','elixirs?','depletions?','vitalitys?','winchs?','ores?','times?','fates?',
+    'floods?','plagues?','shells?','spores?','pains?','sleeps?','mines?'
+);
 $counters_r=implode('|',$counters_ar);
 /*
 array_multisort($abilities_ar,SORT_DESC);
@@ -63,7 +67,7 @@ array_multisort($types_ar,SORT_DESC);
 array_multisort($actions_ar,SORT_DESC);
 */
 
-$status_ar = array('Equiped','unblockable','Enchanted','Equipment\s?');
+$status_ar = array('Equipped','unblockable','Enchanted','Equipment\s?');
 foreach ($actions_ar as &$action){
     array_push($status_ar,  str_replace('\?', '', $action).'ed');
 }
@@ -77,7 +81,7 @@ $active_r =implode('|',$active_ar );
 
 
 
-$subtypes_ar=array('Saprolings?','Spawns?','Graveborns?|green|bears?');//array('Urzas','Legendary','Zombie','snow','Spirit','Vampire','Elf','Faerie','Eye');
+$subtypes_ar=array('Saprolings?','Spawns?','Graveborns?|green|bears?|Pentavites?');//array('Urzas','Legendary','Zombie','snow','Spirit','Vampire','Elf','Faerie','Eye');
 $p = CardsQuery::create();
 $subtypes_ar_tmp =$p->setFormatter(ModelCriteria::FORMAT_ARRAY)->groupBy('Typeen')->select(array('Typeen'))->find();
 foreach($subtypes_ar_tmp as &$st){
@@ -250,10 +254,14 @@ function parseScript($text,$name){
     preg_match_all('/@\[[^\]]*\],?/', $text, $actions_ar);
     $text='';
     foreach($actions_ar[0] as &$action){
+	
 	parseRepairSomeText($action);
+	
+	$cost = parseCost($action);
+	
 	parseFC($action);
 	parseNumbers($action);
-	$cost = parseCost($action);
+	
 	parseChoose($action);
 	parseManas($action);
 	parseCoins($action);
@@ -261,13 +269,13 @@ function parseScript($text,$name){
 	parseStatus($action);
 	parseActive($action);
 	parseZones($action);
+	parseCounters($action);
 	
 	parseTypes($action);
 	//parseTypes($action);
 	parseAbilitys($action);	
 	parseTurnStructures($action);
 	parseAction($action);
-	parseCounters($action);
 	//parseTargets($action);
 	$parsers_ar=array('FC','Number','Mana','Status','Active','TurnStructure','Zone','Ability','Type','Action','Coin');
 	foreach($parsers_ar as $pa){
@@ -317,13 +325,14 @@ function parseRepairSomeText(&$text){
     $ret=str_ireplace('non-', 'non ', $ret);
     
     $ret=preg_replace('/(puts?) a /i','$1 one ',$ret);
+    $ret=preg_replace('/(remove) a /i','$1 one ',$ret);
     $ret=preg_replace('/(draws?) a card/i','$1 one card',$ret);
     $ret=preg_replace('/(discards?) a card/i','$1 one card',$ret);
     $ret=preg_replace('/(flips?) a coin/i','$1 one coin',$ret);
     $ret=preg_replace('/power and toughness/i','power/toughness',$ret);
     $ret=preg_replace('/([.]); or/','$1 ; or',$ret);
     
-    $ret=preg_replace('/([A-Za-z])-[^-]/', '$1 -', $ret);
+    $ret=preg_replace('/([A-Za-z])-([^-])/', '$1 - $2', $ret);
     $ret=preg_replace('/-([A-Za-z])/', '- $1', $ret);
     
     return $ret;
@@ -428,6 +437,9 @@ function parseCost(&$text){
     if(preg_match('/^\{[^:]*:/',$ret)){
 	$cost = preg_replace('/^([^:]*): .*/','$1', $ret);
 	$cost = str_replace('{tap}','{TAP}',$cost);
+	parseRepairSomeText($cost);
+	parseNumbers($cost);
+	parseFC($cost);
 	parseAction($cost);
 	parseManas($cost);
 	//$cost = str_replace('{', '\'', $cost);
@@ -684,13 +696,26 @@ function parseFunctions(&$text){
 	    //'/(Target)?\s?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})\s*gets?\s*(?P<fc>\{type:\'FC\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
 	    '/(Target)?\s?(?P<target>\$Me|(\{type:\'(Type|Player)\'[^\}]*\}\s?)*)\s?gets?\s*(?P<fc>\{type:\'FC\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
 	),
-	'puts'=>array(
-	    //'/put\s?(?P<howMany>\{type:\'Number\'[^\}]*\})\s?(?P<what>charge|(\{type:\'(FC|Type\'[^\}]*\}\s?)*)?\s?(?P<type>counters?|tokens?)\s?(onto|on)\s?(the|for)?\s?(?P<loop>each)?\s?(?P<target>(\$Me|\{type:\'Type\'[^\}]*\}|\{type:\'Zone\'[^\}]*\})?'.$tappo.'/i'
-	    '/put\s?(?P<howMany>\{type:\'Number\'[^\}]*\})\s?(?P<what>((\{type:\'(FC|Type|Counter)\'[^\}]*\}\s?)*))?\s?(?P<type>counters?|tokens?)?\s?(with|onto|on)\s?(the|for)?\s?(?P<with>\{type:\'Ability\'[^\}]*\})?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})?(?P<where>\{type:\'Zone\'[^\}]*\})?'.$tappo.'/i'
-	    //'/put (?P<howMany>\{type:\'Number\'[^\}]*)\s(?P<what>counters?|tokens?|(\{type:\'(FC)\')\s(onto|on)\s?/i'
+	'has'=>array(
+	    '/(Target)?\s?(?P<target>\$Me|(\{type:\'(Type|Player|Status)\'[^\}]*\}\s?)*)\s?has\s?(?P<ability>\{type:\'Ability\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
+	),
+	'pay'=>array(
+	    '/(?P<target>(\{type:\'Player\'[^\}]*\}\s)*)?\s?Pay\s?(?P<howMany>\$Me|\{type:\'(Number|Mana)\'[^\}]*\})\s?(?<what>life|mana cost)?'.$tappo.'/i'
+	),
+	'putCounters'=>array(
+	    /*
+	     * Remove {type:'Number',value:'1'} {type:'FC',value:'-1/-1'} counter from target {type:'Type',value:'creature'} .
+	     */
+	    '/puts?\s?(?P<howMany>\{type:\'Number\'[^\}]*\})\s?(?P<what>((\{type:\'(FC|Type|Counter)\'[^\}]*\}\s?)*))?\s?(?P<type>counters?|tokens?)?\s?(with|onto|on|from)\s?(the|for)?\s?(?P<with>\{type:\'Ability\'[^\}]*\})?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})?(?P<where>\{type:\'Zone\'[^\}]*\})?'.$tappo.'/i'
+	),
+	'removeCounters'=>array(
+	    '/remove\s?(?P<howMany>\{type:\'Number\'[^\}]*\})\s?(?P<what>((\{type:\'(FC|Type|Counter)\'[^\}]*\}\s?)*))?\s?(?P<type>counters?|tokens?)?\s?(with|onto|on)\s?(the|for|from)?\s?(?P<with>\{type:\'Ability\'[^\}]*\})?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})?(?P<where>\{type:\'Zone\'[^\}]*\})?'.$tappo.'/i'
+	),
+	'counterSpell'=>array(
+	    '/Counter target (?P<target>\$Me|(\{type:\'(Type)\'[^\}]*\}\s?)*)'.$tappo.'/i'
 	)
     );
-    if(preg_match('/\'Counter\'/i', $ret)){
+    if(preg_match('/ pay /i', $ret)){
     	$a=true;
 	//$ret="Whenever \$Me or another {type:'Type',value:'Ally'} enters the {type:'Zone',value:'battlefield'} under {type:'Player',value:'your'} control, {type:'Player',value:'you'} may have {type:'Type',value:'Ally'} {type:'Type',value:'creatures'}  {type:'Player',value:'you'} control get {type:'FC',value:'+1/+0'} until {type:'TurnStructure',value:'end of turn'} .";
 	//$ret="Target {type:'Type',value:'creature'} {type:'Player',value:'you control'} gets {type:'FC',value:'+2/-2'} until {type:'TurnStructure',value:'end of turn'} .";
