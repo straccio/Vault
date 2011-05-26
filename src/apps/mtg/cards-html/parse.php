@@ -31,15 +31,15 @@ $abilities_ar = array(
 $abilities_r=implode('|',$abilities_ar);
 $types_ar = array(
     'Artifacts?','Creatures?','Enchantments?','Instants?','Lands?','Planeswalkers?','Sorceries?','Tribals?','Planes?','Vanguards?',
-    'Schemes?','Spells?','Mana Abilities','Abilities','Sorcery','Walls?','permanents?','Ability'
+    'Schemes?','Spells?','Mana Abilities','Abilities','Sorcery','Walls?','permanents?','Ability','Equipments?'
 );
 $types_r=implode('|',$types_ar);
-$players_ar=array('Opponents?','Players?','he or she','Owners?'.'controllers?','owners?','your control','yours?','you control','you');
+$players_ar=array('Opponents?','Players?','he or she','Owners?'.'controllers?','owners?','your control','yours?','you control','you','his or her');
 $players_r=implode('|', $players_ar);
 $lands_ar=array('forests?','swamps?','islands?','plains?','mountains?','basic lands?');
 $lands_r=implode('|',$lands_ar);
 $zones_ar = array(
-    'Librarys?','Hands?','Battlefields?','Graveyards?','Stacks?','Exiles?','Antes?','Mana Pools?'
+    'Librarys?','Hands?','Battlefields?','Graveyards?','Stacks?','Antes?','Mana Pools?'
 );
 $zones_r=implode('|',$zones_ar);
 $turnStructures_ar = array(
@@ -49,7 +49,7 @@ $turnStructures_ar = array(
 $turnStructures_r=implode('|',$turnStructures_ar);
 
 $actions_ar = array(
-  'Activates?','Attachs?','Attacks?','Blocks?','Casts?','NONFARLOCounter','Destroy','Exchange','Exile','Play','Regenerates?','Reveals?','Sacrifices?','Search','Shuffle',
+  'Activates?','Attachs?','Attacks?','Blocks?','Casts?','NONFARLOCounter','Destroy','Exchange','Exiles?','Play','Regenerates?','Reveals?','Sacrifices?','Search','Shuffle',
   'Tapp,','Untapp','Taps?','Untaps?','Scry','Fateseal','Clashs?','Planeswalk','Set in Motions?','Abandon','Proliferates?','Discards?','Draws?','Defends?','Flips?'
 );
 $actions_r=implode('|',$actions_ar);
@@ -60,6 +60,9 @@ $counters_ar=array(
     'floods?','plagues?','shells?','spores?','pains?','sleeps?','mines?'
 );
 $counters_r=implode('|',$counters_ar);
+
+$selectors_ar=array('all','each');
+$selectors_r=implode('|',$selectors_ar);
 /*
 array_multisort($abilities_ar,SORT_DESC);
 array_multisort($types_ar,SORT_DESC);
@@ -67,7 +70,7 @@ array_multisort($types_ar,SORT_DESC);
 array_multisort($actions_ar,SORT_DESC);
 */
 
-$status_ar = array('Equipped','unblockable','Enchanted','Equipment\s?');
+$status_ar = array('exiled','regenerated','Equipped','unblockable','Enchanted','Exchanges','Activated','Proliferated');
 foreach ($actions_ar as &$action){
     array_push($status_ar,  str_replace('\?', '', $action).'ed');
 }
@@ -276,6 +279,7 @@ function parseScript($text,$name){
 	parseAbilitys($action);	
 	parseTurnStructures($action);
 	parseAction($action);
+	parseSelectors($action);
 	//parseTargets($action);
 	$parsers_ar=array('FC','Number','Mana','Status','Active','TurnStructure','Zone','Ability','Type','Action','Coin');
 	foreach($parsers_ar as $pa){
@@ -294,7 +298,7 @@ function parseScript($text,$name){
 	parseFunctions($action);
 	
 	insertSingleAbility($action,$cost);
-	$text.='doActiveCardAbility('.$cost.','.$action .')';
+	$text.=$cost.' : '.$action .'';
 	
     }
     //$text = preg_replace('/([@mcavpslts]\([^\)]*\))/',' $1 ',$text);
@@ -524,6 +528,16 @@ function parseCounters(&$text){
     parser('Counter', '('.$counters_r.') counters?', '$1', $ret);
 }
 
+function parseSelectors(&$text){
+    global
+	$selectors_r;
+
+    $ret=&$text;
+    
+    //$ret = preg_replace('/(this|isnt|is|non)?-?\s?a?\s??('.$status_r.')/i', ' {type:\'Status\',value:\'$1$2\'} ' , $ret);
+    parser('Selector', '('.$selectors_r.')', '$1', $ret);
+}
+
 function parseCoins(&$text){
     $ret=&$text;
     parser('Coin', '\{(C)\}', '$1' , $ret,false);
@@ -661,7 +675,7 @@ function parseOutputText($text){
 
 function parseFunctionArgs(&$m,$rown){
     
-    $ret = '(';
+    $ret = '{';
     $i=0;
     foreach ($m as $k => &$mm){
 	if(!is_numeric($k)){
@@ -682,7 +696,7 @@ function parseFunctionArgs(&$m,$rown){
 	    $i++;
 	}
     }
-    $ret.=')';
+    $ret.='}';
     return $ret;
 }
 
@@ -691,13 +705,14 @@ function parseFunctions(&$text){
     $tappo='[\s\.,;:]';
     $ret = &$text;
     $funcs_ar=array(
+	// \{type:\'Selector\'[^\}]*\}
 	//gets (?p<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?
 	'gets'=>array(
 	    //'/(Target)?\s?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})\s*gets?\s*(?P<fc>\{type:\'FC\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
-	    '/(Target)?\s?(?P<target>\$Me|(\{type:\'(Type|Player)\'[^\}]*\}\s?)*)\s?gets?\s*(?P<fc>\{type:\'FC\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
+	    '/(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(Target)?\s?(?P<target>\$Me|(\{type:\'(Type|Player)\'[^\}]*\}\s?)*)\s?gets?\s*(?P<fc>\{type:\'FC\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
 	),
 	'has'=>array(
-	    '/(Target)?\s?(?P<target>\$Me|(\{type:\'(Type|Player|Status)\'[^\}]*\}\s?)*)\s?has\s?(?P<ability>\{type:\'Ability\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
+	    '/(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(Target)?\s?(?P<target>\$Me|(\{type:\'(Type|Player|Status)\'[^\}]*\}\s?)*)\s?(has|have)\s?(?P<ability>\{type:\'Ability\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
 	),
 	'pay'=>array(
 	    '/(?P<target>(\{type:\'Player\'[^\}]*\}\s)*)?\s?Pay\s?(?P<howMany>\$Me|\{type:\'(Number|Mana)\'[^\}]*\})\s?(?<what>life|mana cost)?'.$tappo.'/i'
@@ -706,83 +721,60 @@ function parseFunctions(&$text){
 	    /*
 	     * Remove {type:'Number',value:'1'} {type:'FC',value:'-1/-1'} counter from target {type:'Type',value:'creature'} .
 	     */
-	    '/puts?\s?(?P<howMany>\{type:\'Number\'[^\}]*\})\s?(?P<what>((\{type:\'(FC|Type|Counter)\'[^\}]*\}\s?)*))?\s?(?P<type>counters?|tokens?)?\s?(with|onto|on|from)\s?(the|for)?\s?(?P<with>\{type:\'Ability\'[^\}]*\})?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})?(?P<where>\{type:\'Zone\'[^\}]*\})?'.$tappo.'/i'
+	    '/(puts?)\s?(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(?P<howMany>\{type:\'Number\'[^\}]*\})?\s?(?P<what>((\{type:\'(FC|Type|Counter)\'[^\}]*\}\s?)*))?\s?(counters?|tokens?)?\s?(with|onto|on|from)\s?(the|for)?\s?(?P<with>\{type:\'Ability\'[^\}]*\})?\s?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})?(?P<where>\{type:\'Zone\'[^\}]*\})?'.$tappo.'/i'
 	),
+	//(?P<selector>{type:\'Selector\'[^\}]*\})?
+	//	remove {type:'Selector',value:'all'} {type:'FC',value:'+1/+1'} counters from $Me
 	'removeCounters'=>array(
-	    '/remove\s?(?P<howMany>\{type:\'Number\'[^\}]*\})\s?(?P<what>((\{type:\'(FC|Type|Counter)\'[^\}]*\}\s?)*))?\s?(?P<type>counters?|tokens?)?\s?(with|onto|on)\s?(the|for|from)?\s?(?P<with>\{type:\'Ability\'[^\}]*\})?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})?(?P<where>\{type:\'Zone\'[^\}]*\})?'.$tappo.'/i'
+	    '/remove\s?(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(?P<howMany>\{type:\'Number\'[^\}]*\})?\s?(?P<what>((\{type:\'(FC|Type|Counter)\'[^\}]*\}\s?)*))?\s?(counters?|tokens?)?\s?(with|onto|on|from)\s?(the|for)?\s?(?P<with>\{type:\'Ability\'[^\}]*\})?\s?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})?(?P<where>\{type:\'Zone\'[^\}]*\})?'.$tappo.'/i'
 	),
 	'counterSpell'=>array(
 	    '/Counter target (?P<target>\$Me|(\{type:\'(Type)\'[^\}]*\}\s?)*)'.$tappo.'/i'
 	)
     );
-    if(preg_match('/ pay /i', $ret)){
+    if(preg_match('/ remove.*counters?/i', $ret)){
     	$a=true;
 	//$ret="Whenever \$Me or another {type:'Type',value:'Ally'} enters the {type:'Zone',value:'battlefield'} under {type:'Player',value:'your'} control, {type:'Player',value:'you'} may have {type:'Type',value:'Ally'} {type:'Type',value:'creatures'}  {type:'Player',value:'you'} control get {type:'FC',value:'+1/+0'} until {type:'TurnStructure',value:'end of turn'} .";
 	//$ret="Target {type:'Type',value:'creature'} {type:'Player',value:'you control'} gets {type:'FC',value:'+2/-2'} until {type:'TurnStructure',value:'end of turn'} .";
     }
     foreach ($funcs_ar as $fname=> &$func){	
 	foreach ($func as &$rfunc){
-	    if(preg_match_all($rfunc, $ret,$m)){
-		for($i=0;$i<count($m[0]);$i++){
+	    if(preg_match_all($rfunc, $ret,$f)){
+		for($i=0;$i<count($f[0]);$i++){
 		    //foreach($m as $k=>&$mm){
 			//if(!is_numeric($k)){
-			    $ret=str_replace($m[0],' '. $ns.'.'. $fname.parseFunctionArgs($m, $i).'; ', $ret);
+			    $ret=str_replace($f[0],'\n'. $ns.'.'. $fname.'(/*card*/$this,'.parseFunctionArgs($f, $i).");\n", $ret);
 			//}
 		    //}
 		}
 	    }
 	}
     }
-return;
-    
-/*    
-    if(preg_match('/deals? /i', $ret)){
-	echo $ret."\n";
-    }
-*/
-    
-    //'Add one mana of any color to your mana pool\.'
-//(\{type:\'Player\',[^\}]*\})
-    $ret=preg_replace('/(target |that )?\s?(\{type:\'Player\',[^\}]*\})\s*draw\s*(\{type:\'Number\',[^\}]*\})\s*(additionals?)?\s?cards?/i',' drawCards({target:$2,howmany:$3}); ',$ret);   
-    
-    $ret=preg_replace('/draw\s*(up to)?\s?(\{type:\'Number\',[^\}]*\})\s*cards?/i',' drawCards({target:null,howmany:$2}); ',$ret);
-        
-    //$ret=preg_replace('/deals? ([\$v][\(\{][^\}^\)]*[\}\)]) (damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealDamagesTo:$1 :$3',$ret);
-    
-    //FATTA A META $ret=preg_replace('/deals? v\(([^\)]*)\) (combat damage|damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealDamagesTo:$1 :$3',$ret);
-    
-    //$ret=preg_replace('/deals? ([\$v][\(\{][^\}^\)]*[\}\)]) (combat damage)?\s?to ([\$t][\(\{][^\}^\)]*[\}\)])/i','func_dealCombatDamagesTo:$1 :$3',$ret);  
-    
-    //DA FARE $ret=preg_replace('/([\$t][\(\{][^\}^\)]*[\}\)])?\s?discards? ([\$v][\(\{][^\}^\)]*[\}\)]) cards?\s?(at)?\s?(random)?/i','func_discardCards:$2 :$1 :$4',$ret);
-    
-    
-    
-    //$ret=preg_replace('/ gains? ([\$a][\(\{][^\}^\)]*[\}\)])/i','func_gains:$1',$ret);
-    
-    //$ret=preg_replace('/ gets? ([\$@][\(\{][^\}^\)]*[\}\)])/i','func_gets:$1',$ret);
-    
-    //$ret=preg_replace('/skip (your) (next) ([\$s][\(\{][^\}^\)]*[\}\)])/i','func_skyp:$1 :$2 :$3',$ret);
-   
-/*    
-    if(preg_match('/deals? /i', $ret)||preg_match('/func_deal/i', $ret)){
-	echo $ret."\n";
-    }
-*/
-    //return $ret;
 }
 
-function parseEvents($text){
-    global
-	$act_ar;
-    $ret=&$text;
-    
-    $ret=preg_replace('/at the (beginning|end) of (your|opponents?|players?) ([\$][\(\{][^\}^\)]*[\}\)])/i','event_$1:\${target} :$3',$ret);
-    $ret=preg_replace('/at the (beginning|end) of (your|opponents?|players?) ([\sp][\(\{][^\}^\)]*[\}\)])/i','event_$1:t($2) :$3',$ret);
-    $ret=preg_replace('/whenever ([\$sp][\(\{][^\}^\)]*[\}\)]) ('.implode('|', $act_ar).')/i','event_whenever:$1 :$2',$ret);
-    $ret=preg_replace('/As an additional cost to cast ([\$][\(\{][^\}^\)]*[\}\)]),([^\.]*)/i','event_toCast:$1 :${$2}',$ret);
-    //$ret=preg_replace('/(When)?\s?([\$t][\(\{][^\}^\)]*[\}\)]) enters? the ([\$l][\(\{][^\}^\)]*[\}\)]) /i','event_enter:$2 :$3 :$4',$ret);
-    
-    return $ret;
+function parseEvents(&$text){
+    //$ns='MTG.cardAbilities';
+    $tappo='[\s\.,;:]';
+    $ret = &$text;
+    $evs_ar=array(
+	//gets (?p<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?
+	'on'=>array(
+	    '/zzz'.$tappo.'/i'
+	),
+    );
+    if(preg_match('/ pay /i', $ret)){
+    	$a=true;
+    }
+    foreach ($funcs_ar as $fname=> &$func){	
+	foreach ($func as &$rfunc){
+	    if(preg_match_all($rfunc, $ret,$m)){
+		for($i=0;$i<count($m[0]);$i++){
+		    //$ret=str_replace($m[0],' '. $ns.'.'. $fname.parseFunctionArgs($m, $i).'; ', $ret);
+		
+		}
+	    }
+	}
+    }
 }
 
 function parseDuration($text){
