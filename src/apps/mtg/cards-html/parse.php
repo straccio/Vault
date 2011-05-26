@@ -256,49 +256,51 @@ function parseScript($text,$name){
     }    
     preg_match_all('/@\[[^\]]*\],?/', $text, $actions_ar);
     $text='';
-    foreach($actions_ar[0] as &$action){
+    foreach($actions_ar[0] as &$abs){
 	
-	parseRepairSomeText($action);
-	
-	$cost = parseCost($action);
-	
-	parseFC($action);
-	parseNumbers($action);
-	
-	parseChoose($action);
-	parseManas($action);
-	parseCoins($action);
-	parsePlayers($action);
-	parseStatus($action);
-	parseActive($action);
-	parseZones($action);
-	parseCounters($action);
-	
-	parseTypes($action);
-	//parseTypes($action);
-	parseAbilitys($action);	
-	parseTurnStructures($action);
-	parseAction($action);
-	parseSelectors($action);
-	//parseTargets($action);
-	$parsers_ar=array('FC','Number','Mana','Status','Active','TurnStructure','Zone','Ability','Type','Action','Coin');
-	foreach($parsers_ar as $pa){
-	    $rx='/\{type:\\\''.$pa.'\\\',\s?value:\\\'([^\\\']*)\\\'\}\s?(and| )\s?{type:\\\''.$pa.'\\\',\s?value:\\\'([^\\\']*)\\\'\}/i'; 
-	    while(preg_match($rx, $action)){
-		$action = preg_replace($rx, '{type:\''.$pa.'\',value:\'$1,$3\'}', $action);
+	parseRepairSomeText($abs);
+	$abs=explode(' ; ', $abs);
+	foreach($abs as &$action){
+	    $cost = parseCost($action);
+
+	    parseFC($action);
+	    parseNumbers($action);
+
+	    parseChoose($action);
+	    parseManas($action);
+	    parseCoins($action);
+	    parsePlayers($action);
+	    parseStatus($action);
+	    parseActive($action);
+	    parseZones($action);
+	    parseCounters($action);
+
+	    parseTypes($action);
+	    //parseTypes($action);
+	    parseAbilitys($action);	
+	    parseTurnStructures($action);
+	    parseAction($action);
+	    parseSelectors($action);
+	    //parseTargets($action);
+	    $parsers_ar=array('FC','Number','Mana','Status','Active','TurnStructure','Zone','Ability','Type','Action','Coin');
+	    foreach($parsers_ar as $pa){
+		$rx='/\{type:\\\''.$pa.'\\\',\s?value:\\\'([^\\\']*)\\\'\}\s?(and| )\s?{type:\\\''.$pa.'\\\',\s?value:\\\'([^\\\']*)\\\'\}/i'; 
+		while(preg_match($rx, $action)){
+		    $action = preg_replace($rx, '{type:\''.$pa.'\',value:\'$1,$3\'}', $action);
+		}
 	    }
-	}
-	foreach($parsers_ar as $pa){
-	    $rx='/\{type:\\\''.$pa.'\\\',\s?value:\[?([^\}^\]]*)\]?\}\s?,?\s?(or)\s?(the)?\s?{type:\\\''.$pa.'\\\',\s?value:\[?([^\}^\]]*)\]?\}/i'; 
-	    while(preg_match($rx, $action)){
-		$action = preg_replace($rx, '{type:\''.$pa.'\',value:[$1,$4]}', $action);
+	    foreach($parsers_ar as $pa){
+		$rx='/\{type:\\\''.$pa.'\\\',\s?value:\[?([^\}^\]]*)\]?\}\s?,?\s?(or)\s?(the)?\s?{type:\\\''.$pa.'\\\',\s?value:\[?([^\}^\]]*)\]?\}/i'; 
+		while(preg_match($rx, $action)){
+		    $action = preg_replace($rx, '{type:\''.$pa.'\',value:[$1,$4]}', $action);
+		}
 	    }
+
+	    parseFunctions($action);
+
+	    insertSingleAbility($action,$cost);
+	    $text.=$cost.' : '.$action .'';
 	}
-	
-	parseFunctions($action);
-	
-	insertSingleAbility($action,$cost);
-	$text.=$cost.' : '.$action .'';
 	
     }
     //$text = preg_replace('/([@mcavpslts]\([^\)]*\))/',' $1 ',$text);
@@ -545,40 +547,40 @@ function parseCoins(&$text){
 }
 
 function insertSingleAbility($text,$cost){
-    $abs=explode(' ; ', $text);
-    foreach ($abs as &$ab){
-    //$ab=$text;
-	if($ab){
-	    $s = new Abscript();
-	    $t=parseAbility(trim($ab));
-	    if($t!=''){
-		    $s->setAbility(parseAbility(trim($t)));
-		    $s->setSample(trim($cost.$ab));
-		    try {
-			    $s->save();	
-		    } catch (Exception $e) {
-			    unset($e);
-		    }
-		    unset($s);
-		    preg_match('/a\([^\)]*\)/',$ab,$sabs);
-		    foreach ($sabs as $sab){
-			    //$s = AbscriptQuery::create()->findPk($sab);
-			    if($sab ){
-				    $s = new Abscript();
+    //$abs=explode(' ; ', $text);
+    //foreach ($abs as &$ab){
+    $ab=$text;
+    if($ab){
+	$s = new Abscript();
+	$t=parseAbility(trim($ab));
+	if($t!=''){
+		$s->setAbility(parseAbility(trim($t)));
+		$s->setSample(trim($cost.$ab));
+		try {
+			$s->save();	
+		} catch (Exception $e) {
+			unset($e);
+		}
+		unset($s);
+		preg_match('/a\([^\)]*\)/',$ab,$sabs);
+		foreach ($sabs as $sab){
+			//$s = AbscriptQuery::create()->findPk($sab);
+			if($sab ){
+				$s = new Abscript();
 
-				    $s->setAbility(parseAbility(trim($sab)));
-				    $s->setSample(trim($cost.$sab));
-				    try {
-					    $s->save();	
-				    } catch (Exception $e) {
-					    unset($e);
-				    }
-				    unset($s);		
-			    }
-		    }
-	    }
+				$s->setAbility(parseAbility(trim($sab)));
+				$s->setSample(trim($cost.$sab));
+				try {
+					$s->save();	
+				} catch (Exception $e) {
+					unset($e);
+				}
+				unset($s);		
+			}
+		}
 	}
     }
+    //}
 }
 
 function insertAbility($text){
@@ -685,8 +687,8 @@ function parseFunctionArgs(&$m,$rown){
 		if(substr($mm[$rown],0,1) != '{'){
 		    $mm[$rown] = '\''.$mm[$rown].'\'';
 		}
-		if(preg_match_all('/\}\s\{/', $mm[$rown],$p)){
-		    $ret.=$k.':['.preg_replace('/\}\s\{/','},{',$mm[$rown]).']';
+		if(preg_match_all('/\}[\s,]?\{/', $mm[$rown],$p)){
+		    $ret.=$k.':['.preg_replace('/\}[\s,]?\{/','},{',$mm[$rown]).']';
 		}else{
 		    $ret.=$k.':'.$mm[$rown];
 		}
@@ -743,7 +745,7 @@ function parseFunctions(&$text){
 		for($i=0;$i<count($f[0]);$i++){
 		    //foreach($m as $k=>&$mm){
 			//if(!is_numeric($k)){
-			    $ret=str_replace($f[0],'\n'. $ns.'.'. $fname.'(/*card*/$this,'.parseFunctionArgs($f, $i).");\n", $ret);
+			    $ret=str_replace($f[0],"\n". $ns.'.'. $fname.'(/*card*/$this,'.parseFunctionArgs($f, $i).");\n", $ret);
 			//}
 		    //}
 		}
