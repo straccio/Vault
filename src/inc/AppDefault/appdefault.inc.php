@@ -7,6 +7,7 @@
 require_once 'propel/Propel.php';
 require_once 'inc/public.functions.inc.php';
 require_once 'inc/smarty.inc.php';
+require_once 'inc/PropelHelper.php';
 //require_once 'inc/ldap/ldap_client.php';
 //require_once 'inc/ldap.inc.php';
 //require_once 'apps/referenze/inc/Propel_Helper.inc.php';

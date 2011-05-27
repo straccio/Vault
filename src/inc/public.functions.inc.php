@@ -15,11 +15,11 @@ function direct_getDirect($className,$appname){
 	$api = new ExtDirect_API();
 	$api->setRouterUrl('?op=getRouter'); // default
 	$api->setCacheProvider($cache);
-	$api->setNamespace('Ext.Polaris'); 
-	$api->setDescriptor('Ext.Polaris.' . $appname. '_APIDesc');
+	$api->setNamespace('Vault'); 
+	$api->setDescriptor('Vault.'.$appname. '._APIDesc');
 	$api->setDefaults(array(
-    	'autoInclude' => false,
-    	'basePath' => 'inc'
+	    'autoInclude' => false,
+	    'basePath' => 'inc'
 	));
 	
 	foreach($classes as $className){
@@ -31,9 +31,9 @@ function direct_getDirect($className,$appname){
 		// Include ExtDirect PHP Helpers
 		
 		$api->add(
-	    	array(
-	    	   	$className => array('prefix' => 'Direct_')
-	    	)
+		    array(
+			$className => array('prefix' => 'Direct_')
+		    )
 		);
 	}
 	$api->output();

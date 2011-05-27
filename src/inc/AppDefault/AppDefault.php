@@ -10,6 +10,7 @@ class AppDefault {
         $noAuth,
         $appname,
         $approot,
+	$propel,
         $directClasses,
         $directClassName,
         $propelApps,
@@ -18,7 +19,7 @@ class AppDefault {
     //put your code here
     
     private function initApp(){
-        $this->appname=  get_class($this) ;
+        $this->appname= str_replace('Direct_', '', get_class($this)) ;
         $this->approot='apps/'.strtolower($this->appname);
         $this->propelApps=array();
     }
@@ -39,20 +40,9 @@ class AppDefault {
     }
     
     private function initPropel($propelApps=array()){
-        global 
-            $root;
-        
-        $include_path=get_include_path();
-        $include_path.=PATH_SEPARATOR . $root . '/'.$this->approot.'/propel/build/classes/';
-        foreach ($propelApps as $app){
-            $include_path.=PATH_SEPARATOR . $root . '/apps/'.$app.'/propel/build/classes/';
-        }
-        set_include_path($include_path);
-        Propel::init($this->approot.'/propel/build/conf/'.  strtolower($this->appname) .'-conf.php');
+	$this->propel = new PropelHelper($this->appname, $this->approot, $propelApps);
     }
-    
-    
-    
+        
     public function execute($params){
         $this->onBeforeExecute(&$params);
         if($params['op']){
@@ -60,7 +50,6 @@ class AppDefault {
         }
         $this->onAfterExecute(&$params);
     }
-
 
     public function render($type){
         global
@@ -85,14 +74,12 @@ class AppDefault {
                 break;
         }
         
-        switch ($params['op']) {
+        switch ($p['op']) {
             case "getDirect":
-                    $this->getDirect();
-                    
+		$this->getDirect();
             break;
             case "getRouter":
-                    $this->getRouter();
-                    
+		$this->getRouter();
             break;
 
             default:
@@ -106,8 +93,7 @@ class AppDefault {
         }
         $this->onAfterRender();
     }
-    
-    
+     
     function auth(){
         return true;
     }
@@ -126,12 +112,17 @@ class AppDefault {
             require_once 'apps/'.$className.'/inc/' . strtolower($className).'.direct.php';
         }
     }
+    
     private function getDirect(){
+	require_once $this->approot.'/inc/'.$this->appname.'.direct.php';
         direct_getDirect($this->directClasses,$this->directClassName);
     }
+    
     private function getRouter(){
+	require_once($this->approot.'/inc/'.$this->appname.'.direct.php');
         direct_getRouter($this->directClasses ,$this->directClassName );
     }
+    
     private function assignSmartyDefaults(){
         global
             $smarty;

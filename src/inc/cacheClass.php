@@ -1,7 +1,7 @@
 <?php
-class cacheClass{
+class CacheClass{
 	private
-			$cache_timeout_seconds;
+	    $cache_timeout_seconds;
 			
 	function __construct(){
 		$this->cache_timeout_seconds=3600.0;

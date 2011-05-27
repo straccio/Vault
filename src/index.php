@@ -27,7 +27,11 @@ require_once 'inc/smarty.inc.php';
 	}
 	if(!$params["app"]) $params["app"] = $defaultci;
 	if ($params["app"]){
-                $class=ucwords($params["app"]);
+		if(strlen($params["app"])<=3){
+		    $class=strtoupper($params["app"]);
+		}else{
+		    $class=ucwords($params["app"]);
+		}
 		require_once "apps/".$params["app"] . "/inc/" . $class . ".php";
                 
 		$objci = new $class();
