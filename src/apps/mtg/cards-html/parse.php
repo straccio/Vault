@@ -11,8 +11,6 @@ Propel::init('../propel/build/conf/mtg-conf.php');
 $xsl = new DomDocument;
 $xsl->substituteEntities = true;
 $xsl->load('parse.xslt');
-  
-//$dirlist = scandir(".");
 
 $numbers_ar = array('zero','one','two','three','four','five','six','seven','eight','nine','ten');
 $colors_ar=array('white','black','red','green','blue','basic','multicolored','monocolored','colorless','any colors?','all colors?');
@@ -97,40 +95,7 @@ foreach($subtypes_ar_tmp as &$st){
 	if(strlen( $sti)>1){
 	    array_push($subtypes_ar,$sti);
 	}
-    }
-	
-
-    /*
-    while($st){
-	$st=str_replace('Urza-s', 'Urzas', $st);
-	if($st=='Tribal Sorcery'){
-	    $a=true;
-	}
-	if(!preg_match('/^('.$types_r.'|'.implode('|', $subtypes_ar).')$/',$st)){
-	    if(preg_match('/('.$types_r.'|'.implode('|', $subtypes_ar).')\s[-]\s(.*)/', $st,$m)){
-		$st=$m[2];
-	    }else{
-		if(preg_match('/([^\-]*)[- ]([^\-]*)/', $st,$m)){
-		    $st='';
-		    array_shift($m);
-		    foreach ($m as $mm){
-			if(strpos($mm,'-') || strpos( $mm,' ')){
-			    $st=$mm;
-			    array_shift($m);
-			}
-		    }
-		    $subtypes_ar=array_merge($subtypes_ar,$m);
-		    
-		}else{
-		    array_push($subtypes_ar, $st);
-		    $st='';
-		}
-	    }
-	}else{
-	    $st='';
-	}
-    }
-     */   
+    }  
 }
 unset($subtypes_ar_tmp);
 $subtypes_ar=array_unique($subtypes_ar);
