@@ -240,10 +240,9 @@ function parseScript($text,$name){
 	    parseZones($action);
 	    parseCounters($action);
 
-	    parseAbilitys($action);	
 	    parseTypes($action);
-	    //parseTypes($action);
-	    
+	    parseAbilitys($action);	
+	    	    
 	    parseTurnStructures($action);
 	    parseAction($action);
 	    parseSelectors($action);
@@ -429,7 +428,7 @@ function parseCost(&$text){
 }
 
 function parseAbilitys(&$text){
-    global
+    global  
 	$colors_r,
 	$abilities_r;// _ar;
     
@@ -440,8 +439,9 @@ function parseAbilitys(&$text){
     //$ret=preg_replace('/^'.$rx.'/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
     //$ret=preg_replace('/'.$rx.'$/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
     //$ret=preg_replace('/[\s,\.;^:]'.$rx.'[\s,\.;]/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
-    parser('Ability', '(isnt|non)?(this|is)?\s?a?\s?('.$abilities_r.')\s?(from)?\s?(the)?\s?('.$colors_r.')?', '$1$6$3', $ret);
+    parser('Ability', '(isnt|non)?(this|is)?\s?a?\s?('.$abilities_r.')', '$1$3', $ret);
     
+    parser('Ability', '\{type:\'Ability\',value:\'(protections?|affinitys?)\'\}\s?(from)?\s?(the)?\s?\{type:\'Type\',value:\'([^\']*)\'\}', '$4$1', $ret);
     
     //$ret = preg_replace('/[Pp]rotection from the ([^\s^,^\.^;^:\]]*)/i',' {type:\'Ability\',value:\'$1Protection\'} ',$ret);
 //$ret = parser('Ability', '[Pp]rotection from ([^\s^,^\.^;^:\]]*)', '$1Protection', $ret);
