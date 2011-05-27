@@ -275,9 +275,10 @@ function parseScript($text,$name){
 	    parseZones($action);
 	    parseCounters($action);
 
+	    parseAbilitys($action);	
 	    parseTypes($action);
 	    //parseTypes($action);
-	    parseAbilitys($action);	
+	    
 	    parseTurnStructures($action);
 	    parseAction($action);
 	    parseSelectors($action);
@@ -469,7 +470,7 @@ function parseAbilitys(&$text){
     
     $ret=&$text;
     
-    $rx='(isnt|non)?(this|is)??\s?a?\s?('.$abilities_r.')\s?(from)?\s?(the)?\s?('.$colors_r.')?';
+    //$rx='(isnt|non)?(this|is)??\s?a?\s?('.$abilities_r.')\s?(from)?\s?(the)?\s?('.$colors_r.')?';
     
     //$ret=preg_replace('/^'.$rx.'/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
     //$ret=preg_replace('/'.$rx.'$/i',' {type:\'Ability\',value:\'$1$5$2\'} ' , $ret);
