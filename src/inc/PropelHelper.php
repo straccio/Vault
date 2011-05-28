@@ -25,7 +25,7 @@ class PropelHelper {
         Propel::init($appRoot.'/propel/build/conf/'.  strtolower($appName) .'-conf.php');
     }
     
-    function seaarh($className,$query,$start,$limit,$sort,$dir,$fields){
+    function search($className,$query,$start,$limit,$sort,$dir,$fields){
 	if (class_exists($obj)){
 	    eval('$q='.$obj.'Query::create();');
 	    
