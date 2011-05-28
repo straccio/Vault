@@ -24,8 +24,38 @@ class PropelHelper {
         set_include_path($include_path);
         Propel::init($appRoot.'/propel/build/conf/'.  strtolower($appName) .'-conf.php');
     }
-
-    function search($obj,$query,$start,$limit,$sort,$dir,$fields){
+    
+    function seaarh($className,$query,$start,$limit,$sort,$dir,$fields){
+	if (class_exists($obj)){
+	    eval('$q='.$obj.'Query::create();');
+	    
+	    $q=  CardsQuery::create();
+	    //Creare la where
+	    
+	    
+	    //Select
+	    $fields=explode(',', $field);
+	    foreach($fields as $field){
+		$fs=explode('.', $field);
+		if(count($fs)>1){
+		    
+		}else{
+		    if(!$q->getTableMap()->getColumnByPhpName($fs[0])){
+			$q->leftJoinWith($fs[0]);
+		    }
+		}
+	    }
+		    
+	    $frmt = ModelCriteria::FORMAT_ARRAY;// new PropelObjectFormatter();  
+	    $q->setFormatter($frmt);
+	    
+	    
+	}else{
+	    //throw new Exception($message, $code, $previous);
+	}
+    }
+    
+    function searchOLD($obj,$query,$start,$limit,$sort,$dir,$fields){
 			//global $pnMapper,$pnObject;
 			$preLevel=0;
 			$preJ='';
@@ -39,9 +69,7 @@ class PropelHelper {
 				foreach($query as $qq){
 				    $field=$qq->field;
 				    $fields=explode('.', $field);
-				    foreach($){
-					
-				    }
+			
 				}
 				return;
 
