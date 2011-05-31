@@ -230,13 +230,13 @@ function parseScript($text,$name){
 
 	    parseFC($action);
 	    parseNumbers($action);
-
+	 
 	    parseChoose($action);
 	    parseManas($action);
 	    parseCoins($action);
 	    parsePlayers($action);
 	    parseStatus($action);
-	    parseActive($action);
+	    parseActives($action);
 	    parseZones($action);
 	    parseCounters($action);
 
@@ -244,8 +244,9 @@ function parseScript($text,$name){
 	    parseAbilitys($action);	
 	    	    
 	    parseTurnStructures($action);
-	    parseAction($action);
+	    parseActions($action);
 	    parseSelectors($action);
+	    
 	    //parseTargets($action);
 	    $parsers_ar=array('FC','Number','Mana','Status','Active','TurnStructure','Zone','Ability','Type','Action','Coin');
 	    foreach($parsers_ar as $pa){
@@ -262,6 +263,7 @@ function parseScript($text,$name){
 	    }
 
 	    parseFunctions($action);
+	    parseDoActions($action);
 
 	    insertSingleAbility($action,$cost);
 	    $text.=$cost.' : '.$action .'';
@@ -317,7 +319,7 @@ function parsePlayers(&$text){
     parser('Player', '('.$players_r.')', '$1', $ret);
 }
 
-function parseAction(&$text){
+function parseActions(&$text){
     global 
 	$actions_r;
     $ret = &$text;
@@ -330,7 +332,7 @@ function parseAction(&$text){
     return $ret;
 }
 
-function parseActive(&$text){
+function parseActives(&$text){
     global 
 	$active_r;
     $ret = &$text;
@@ -411,7 +413,7 @@ function parseCost(&$text){
 	parseRepairSomeText($cost);
 	parseNumbers($cost);
 	parseFC($cost);
-	parseAction($cost);
+	parseActions($cost);
 	parseManas($cost);
 	//$cost = str_replace('{', '\'', $cost);
 	//$cost = str_replace('}', '\'', $cost);
@@ -700,11 +702,40 @@ function parseFunctions(&$text){
 	    '/Counter target (?P<target>\$Me|(\{type:\'(Type)\'[^\}]*\}\s?)*)'.$tappo.'/i'
 	)
     );
-    if(preg_match('/ remove.*counters?/i', $ret)){
-    	$a=true;
-	//$ret="Whenever \$Me or another {type:'Type',value:'Ally'} enters the {type:'Zone',value:'battlefield'} under {type:'Player',value:'your'} control, {type:'Player',value:'you'} may have {type:'Type',value:'Ally'} {type:'Type',value:'creatures'}  {type:'Player',value:'you'} control get {type:'FC',value:'+1/+0'} until {type:'TurnStructure',value:'end of turn'} .";
-	//$ret="Target {type:'Type',value:'creature'} {type:'Player',value:'you control'} gets {type:'FC',value:'+2/-2'} until {type:'TurnStructure',value:'end of turn'} .";
+    foreach ($funcs_ar as $fname=> &$func){	
+	foreach ($func as &$rfunc){
+	    if(preg_match_all($rfunc, $ret,$f)){
+		for($i=0;$i<count($f[0]);$i++){
+		    //foreach($m as $k=>&$mm){
+			//if(!is_numeric($k)){
+			    $ret=str_replace($f[0],"\n". $ns.'.'. $fname.'(/*card*/$this,'.parseFunctionArgs($f, $i).");\n", $ret);
+			//}
+		    //}
+		}
+	    }
+	}
     }
+}
+
+function parseDoActions(&$text){
+    $ns='MTG.cardAbilities';
+    $tappo='[\s\.,;:]';
+    $ret = &$text;
+    $funcs_ar=array(
+	// \{type:\'Selector\'[^\}]*\}
+	//gets (?p<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?
+	'drawCards'=>array(
+	    //'/(target)?\s?(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(?P<target>\{type:\'Player\'[^\}]*\})?\s?\{type:\'Action\',value:\'(Draws?)\'\}\s?(?P<howmany>\{type:\'Number\'[^\}]*\})\s?cards?'.$tappo.'/i',
+	    '/(target)?\s?(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(?P<target>\{type:\'Player\'[^\}]*\})?\s?\{type:\'Action\',value:\'(Draws?)\'\}\s?(?P<howmany>\{type:\'Number\'[^\}]*\})\s?cards?'.$tappo.'/i'
+	),
+	'discardCards'=>array(
+	    '/(target)?\s?(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(?P<target>\{type:\'Player\'[^\}]*\})?\s?\{type:\'Action\',value:\'(Discards?)\'\}\s?(?P<howmany>\{type:\'Number\'[^\}]*\})\s?cards?'.$tappo.'/i'
+	),
+	'sacrifice'=>array(
+	    '/\{type:\'Action\',value:\'Sacrifices?\'\}\s?(targets?)?\s?(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})'.$tappo.'/i'
+	)
+    );
+    
     foreach ($funcs_ar as $fname=> &$func){	
 	foreach ($func as &$rfunc){
 	    if(preg_match_all($rfunc, $ret,$f)){
