@@ -685,7 +685,11 @@ function parseFunctions(&$text){
 	    '/(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(Target)?\s?(?P<target>\$Me|(\{type:\'(Type|Player|Status)\'[^\}]*\}\s?)*)\s?(has|have)\s?(?P<ability>\{type:\'Ability\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
 	),
 	'pay'=>array(
-	    '/(?P<target>(\{type:\'Player\'[^\}]*\}\s)*)?\s?Pay\s?(?P<howMany>\$Me|\{type:\'(Number|Mana)\'[^\}]*\})\s?(?<what>life|mana cost)?'.$tappo.'/i'
+	    '/(?P<target>(\{type:\'Player\'[^\}]*\}\s)*)?\s?Pay\s?(?P<howMany>\$Me|\{type:\'(Number|Mana)\'[^\}]*\})\s?(?P<what>life|mana cost)?'.$tappo.'/i',
+	    '/(target)?\s?(?P<target>(\{type:\'Player\'[^\}]*\}\s)*)?\s?Gain\s?(?P<howMany>\$Me|\{type:\'(Number|Mana)\'[^\}]*\})\s?(?<what>life)?'.$tappo.'/i'
+	),
+	'gain'=>array(
+	    '/(target)?\s?(?P<target>\{type:\'Player\'[^\}]*\})?\s?Gains?\s?(?P<howMany>\{type:\'(Number)\'[^\}]*\})\s?(?<what>life)?'.$tappo.'/i'
 	),
 	'putCounters'=>array(
 	    /*
@@ -700,6 +704,9 @@ function parseFunctions(&$text){
 	),
 	'counterSpell'=>array(
 	    '/Counter target (?P<target>\$Me|(\{type:\'(Type)\'[^\}]*\}\s?)*)'.$tappo.'/i'
+	),
+	'deal'=>array(
+	    '/(?P<who>\$Me)?\s?deals?\s?(?P<howmany>\{type:\'Number\'[^\}]*\})\s?(?P<what>combat damage|damage)\s?to\s?(targets?|thats?|a)?\s?(?P<target>\{type:\'(Type|Player)\'[^\}]*\})'.$tappo.'/i'
 	)
     );
     foreach ($funcs_ar as $fname=> &$func){	
