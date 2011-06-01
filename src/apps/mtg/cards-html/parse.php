@@ -707,7 +707,12 @@ function parseFunctions(&$text){
 	),
 	'deal'=>array(
 	    '/(?P<who>\$Me)?\s?deals?\s?(?P<howmany>\{type:\'Number\'[^\}]*\})\s?(?P<what>combat damage|damage)\s?to\s?(targets?|thats?|a)?\s?(?P<target>\{type:\'(Type|Player)\'[^\}]*\})'.$tappo.'/i'
+	),
+	'prevent'=>array(
+	    //Prevent the next ${Number} damage that would be dealt to target ${Type} this ${TurnStructure} .
+	    '/prevents?\s?(the\s?next)?\s?(?P<homany>\{type:\'(Selector|Number)\'[^\}]*\})\s?(?P<what>combat damage|damage)\s?(that)?\s?(would\s?be\s?dealt\s?to)\s?(targets?)?\s?(?P<target>\{type:\'(Type|Player)\'[^\}]*\})\s?(this)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
 	)
+	
     );
     foreach ($funcs_ar as $fname=> &$func){	
 	foreach ($func as &$rfunc){
