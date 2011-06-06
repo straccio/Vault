@@ -32,7 +32,7 @@ $types_ar = array(
     'Schemes?','Spells?','Mana Abilities','Abilities','Sorcery','Walls?','permanents?','Ability','Equipments?'
 );
 $types_r=implode('|',$types_ar);
-$players_ar=array('Opponents?','Players?','he or she','Owners?'.'controllers?','owners?','your control','yours?','you control','you','his or her');
+$players_ar=array('Opponents?','Players?','he or she','Owners?'.'controllers?','your control','yours?','you control','you','his or her');
 $players_r=implode('|', $players_ar);
 $lands_ar=array('forests?','swamps?','islands?','plains?','mountains?','basic lands?');
 $lands_r=implode('|',$lands_ar);
@@ -82,7 +82,7 @@ $active_r =implode('|',$active_ar );
 
 
 
-$subtypes_ar=array('Saprolings?','Spawns?','Graveborns?|green|bears?|Pentavites?');//array('Urzas','Legendary','Zombie','snow','Spirit','Vampire','Elf','Faerie','Eye');
+$subtypes_ar=array('Saprolings?','Spawns?','Graveborns?|green|bears?|Pentavites?|Phages?');//array('Urzas','Legendary','Zombie','snow','Spirit','Vampire','Elf','Faerie','Eye');
 $p = CardsQuery::create();
 $subtypes_ar_tmp =$p->setFormatter(ModelCriteria::FORMAT_ARRAY)->groupBy('Typeen')->select(array('Typeen'))->find();
 foreach($subtypes_ar_tmp as &$st){
@@ -682,11 +682,14 @@ function parseFunctions(&$text){
 	    '/(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(Target)?\s?(?P<target>\$Me|(\{type:\'(Type|Player)\'[^\}]*\}\s?)*)\s?gets?\s*(?P<fc>\{type:\'FC\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
 	),
 	'has'=>array(
-	    '/(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(Target)?\s?(?P<target>\$Me|(\{type:\'(Type|Player|Status)\'[^\}]*\}\s?)*)\s?(has|have)\s?(?P<ability>\{type:\'Ability\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
+	    '/(targets?)?\s?(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(Target)?\s?(?P<target>\$Me|(\{type:\'(Type|Player|Status)\'[^\}]*\}\s?)*)\s?(has|have)\s?(?P<ability>\{type:\'Ability\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
 	),
-	'pay'=>array(
-	    '/(?P<target>(\{type:\'Player\'[^\}]*\}\s)*)?\s?Pay\s?(?P<howMany>\$Me|\{type:\'(Number|Mana)\'[^\}]*\})\s?(?P<what>life|mana cost)?'.$tappo.'/i',
-	    '/(target)?\s?(?P<target>(\{type:\'Player\'[^\}]*\}\s)*)?\s?Gain\s?(?P<howMany>\$Me|\{type:\'(Number|Mana)\'[^\}]*\})\s?(?<what>life)?'.$tappo.'/i'
+	'lose'=>array(
+	    '/(targets?)?\s?(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(Target)?\s?(?P<target>\$Me|(\{type:\'(Type|Player|Status)\'[^\}]*\}\s?)*)\s?(loses)\s?(?P<effectSelector>{type:\'Selector\'[^\}]*\})?\s?(?P<ability>\{type:\'Ability\'[^\}]*\})\s?(?P<timeEvent>until)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
+	),
+	'pay,'=>array(
+	    '/(targets?)?\s?(?P<target>(\{type:\'(Player|Type)\'[^\}]*\}\s)*)?\s?(Pay\s?|Loses?)\s?(?P<howMany>\$Me|\{type:\'(Number|Mana)\'[^\}]*\})\s?(?P<what>life|mana cost)?'.$tappo.'/i',
+	    //'/(target)?\s?(?P<target>(\{type:\'Player\'[^\}]*\}\s)*)?\s?Gain\s?(?P<howMany>\$Me|\{type:\'(Number|Mana)\'[^\}]*\})\s?(?<what>life)?'.$tappo.'/i'
 	),
 	'gain'=>array(
 	    '/(target)?\s?(?P<target>\{type:\'Player\'[^\}]*\})?\s?Gains?\s?(?P<howMany>\{type:\'(Number)\'[^\}]*\})\s?(?<what>life)?'.$tappo.'/i'
@@ -711,6 +714,10 @@ function parseFunctions(&$text){
 	'prevent'=>array(
 	    //Prevent the next ${Number} damage that would be dealt to target ${Type} this ${TurnStructure} .
 	    '/prevents?\s?(the\s?next)?\s?(?P<homany>\{type:\'(Selector|Number)\'[^\}]*\})\s?(?P<what>combat damage|damage)\s?(that)?\s?(would\s?be\s?dealt\s?to)\s?(targets?)?\s?(?P<target>\{type:\'(Type|Player)\'[^\}]*\})\s?(this)?\s?(?P<turnStructure>\{type:\'TurnStructure\'[^\}]*\})?'.$tappo.'/i'
+	),
+	'addMana'=>array(
+	    //Add {type:'Mana',value:'W'} to {type:'Player',value:'your'} {type:'Zone',value:'mana pool'} .
+	    '/Add (?P<mana>\{type:\'Mana\'[^\}]*\})\s?to\s?(?P<target>\{type:\'Player\'[^\}]*\})\s?(?P<where>\{type:\'Zone\'[^\}]*\})?'.$tappo.'/i'
 	)
 	
     );
@@ -745,6 +752,9 @@ function parseDoActions(&$text){
 	),
 	'sacrifice'=>array(
 	    '/\{type:\'Action\',value:\'Sacrifices?\'\}\s?(targets?)?\s?(?P<selector>{type:\'Selector\'[^\}]*\})?\s?(?P<target>\$Me|\{type:\'Type\'[^\}]*\})'.$tappo.'/i'
+	),
+	'flip'=>array(
+	    '/(targets?)?\s?(?P<target>\{type:\'Player\'[^\}]*\})?\s?\{type:\'Action\',value:\'Flip\'\}\s?(?P<howmany>\{type:\'Number\'[^\}]*\})\s?coin'.$tappo.'/i'
 	)
     );
     
